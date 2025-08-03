@@ -21,7 +21,6 @@ class ProductController extends Controller
             $limit = $request->input('limit', 15);
             $search = $request->input('search');
             $categoryId = $request->input('category_id');
-
             $query = Product::with(['category', 'branch']);
 
             if ($search) {

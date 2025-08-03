@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('set null');
             $table->string('bank_name'); // Nama produk
             $table->string('account_number'); // Nama produk
-            $table->string('account_holder_number'); // Nama produk
+            $table->string('account_holder_name'); // Nama produk
             $table->boolean('is_active')->default(false); // Nama produk
             $table->boolean('is_default'); // Nama produk
             $table->timestamps(); // created_at dan updated_at

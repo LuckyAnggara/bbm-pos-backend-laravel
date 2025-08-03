@@ -3,26 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\BankAccount;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class BankAccountController extends Controller
+class BranchController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = BankAccount::with('branch:id,name');
-
-        // Filter by branch if provided
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
-
-        return $query->latest()->get();
+        return Branch::latest()->get();
     }
 
     /**
@@ -30,87 +23,81 @@ class BankAccountController extends Controller
      */
     public function store(Request $request)
     {
+
+
         $validated = $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'bank_name' => 'required|string|max:255',
-            'account_number' => 'required|string|max:255',
-            'account_holder_name' => 'required|string|max:255',
-            'is_active' => 'required|boolean',
-            'is_default' => 'required|boolean',
+            'name' => 'required|string|max:255',
+            'invoice_name' => 'required|string|max:255',
+            'printer_port' => 'nullable|string|max:255',
+            'default_report_period' => 'sometimes|string|max:255',
+            'transaction_delete_password' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'phone' => 'nullable|string|max:50',
+            'currency' => 'sometimes|string|max:10',
+            'tax_rate' => 'sometimes|numeric|min:0',
+            'phone_number' => 'nullable|string|max:50',
         ]);
 
         try {
-            $bankAccount = DB::transaction(function () use ($validated) {
-                // Jika ini diatur sebagai default, nonaktifkan default lainnya di cabang yang sama
-                if ($validated['is_default']) {
-                    BankAccount::where('branch_id', $validated['branch_id'])
-                        ->where('is_default', true)
-                        ->update(['is_default' => false]);
-                }
-                return BankAccount::create($validated);
+            $branch = DB::transaction(function () use ($validated) {
+                return Branch::create($validated);
             });
-
-            return response()->json($bankAccount, 201);
+            return response()->json($branch, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating bank account: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to create bank account.'], 500);
+            Log::error('Error creating branch: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to create branch. Please try again.'], 500);
         }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(BankAccount $bankAccount)
+    public function show(Branch $branch)
     {
-        return $bankAccount->load('branch');
+        // Load relasi users untuk melihat siapa saja yang ada di cabang ini
+        return $branch->load('users');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, BankAccount $bankAccount)
+    public function update(Request $request, Branch $branch)
     {
         $validated = $request->validate([
-            'bank_name' => 'sometimes|required|string|max:255',
-            'account_number' => 'sometimes|required|string|max:255',
-            'account_holder_name' => 'sometimes|required|string|max:255',
-            'is_active' => 'sometimes|required|boolean',
-            'is_default' => 'sometimes|required|boolean',
+            'name' => 'sometimes|required|string|max:255',
+            'invoice_name' => 'sometimes|required|string|max:255',
+            'printer_port' => 'nullable|string|max:255',
+            'default_report_period' => 'sometimes|string|max:255',
+            'transaction_delete_password' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'phone' => 'nullable|string|max:50',
+            'currency' => 'sometimes|string|max:10',
+            'tax_rate' => 'sometimes|numeric|min:0',
+            'phone_number' => 'nullable|string|max:50',
         ]);
 
-        try {
-            DB::transaction(function () use ($bankAccount, $validated) {
-                // Jika ini diatur sebagai default, nonaktifkan default lainnya di cabang yang sama
-                if (isset($validated['is_default']) && $validated['is_default']) {
-                    BankAccount::where('branch_id', $bankAccount->branch_id)
-                        ->where('is_default', true)
-                        ->where('id', '!=', $bankAccount->id) // Jangan update diri sendiri
-                        ->update(['is_default' => false]);
-                }
-                $bankAccount->update($validated);
-            });
 
-            return response()->json($bankAccount);
+        try {
+            DB::transaction(function () use ($branch, $validated) {
+                $branch->update($validated);
+            });
+            return response()->json($branch);
         } catch (\Exception $e) {
-            Log::error("Error updating bank account {$bankAccount->id}: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to update bank account.'], 500);
+            Log::error("Error updating branch {$branch->id}: " . $e->getMessage());
+            return response()->json(['message' => 'Failed to update branch. Please try again.'], 500);
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BankAccount $bankAccount)
+    public function destroy(Branch $branch)
     {
-        try {
-            DB::transaction(function () use ($bankAccount) {
-                $bankAccount->delete();
-            });
+        // Peringatan: Menghapus cabang bisa berdampak pada user yang terhubung.
+        // Relasi di migrasi (onDelete('set null')) akan menangani ini
+        // dengan mengatur branch_id di tabel users menjadi NULL.
+        $branch->delete();
 
-            return response()->json(null, 204);
-        } catch (\Exception $e) {
-            Log::error("Error deleting bank account {$bankAccount->id}: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to delete bank account.'], 500);
-        }
+        return response()->json(null, 204);
     }
 }

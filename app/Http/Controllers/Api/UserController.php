@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException; // <-- Tambahkan ini juga
+
+
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -13,10 +19,19 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua user, bisa ditambahkan paginasi jika perlu
-        $users = User::with('branch')->latest()->get();
+        $query = User::with('branch:id,name');
+
+        // Filter berdasarkan branch_id jika ada di request
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        // Bisa ditambahkan paginasi jika perlu
+        // $users = $query->latest()->paginate(15);
+        $users = $query->latest()->get();
+
         return response()->json($users);
     }
 
@@ -86,5 +101,79 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'branch_id' => 'required|exists:branches,id', // Asumsi branch_id pertama adalah 1
+        ]);
+
+        try {
+            $user = DB::transaction(function () use ($validated) {
+                return User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make($validated['password']),
+                    'role' => 'cashier', // Default role for public registration
+                    'branch_id' => $validated['branch_id'],
+                ]);
+            });
+
+            // Buat token untuk user yang baru dibuat
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+                'message' => 'Registration successful'
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Error creating user from registration: ' . $e->getMessage());
+            return response()->json(['message' => 'Registration failed. Please try again.'], 500);
+        }
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials do not match our records.'],
+            ]);
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Log the user out (invalidate the token).
+     */
+    public function logout(Request $request)
+    {
+        // Gunakan guard 'web' untuk logout dari sesi stateful
+        Auth::guard('web')->logout();
+
+        // Invalidate sesi untuk keamanan
+        $request->session()->invalidate();
+
+        // Buat ulang token CSRF
+        $request->session()->regenerateToken();
+
+        return response()->json(['message' => 'Successfully logged out']);
     }
 }
