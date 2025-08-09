@@ -61,22 +61,40 @@ class ShiftController extends Controller
             ->where('status', 'open')
             ->firstOrFail(); // Gagal jika tidak ada shift aktif
 
+        $validated = $request->validate([
+            'ending_balance' => 'required|numeric|min:0',
+            'actual_balance' => 'required|numeric|min:0',
+            'total_sales' => 'required|numeric|min:0',
+            'total_cash_payments' => 'nullable|numeric|min:0',
+            'total_bank_payments' => 'nullable|numeric|min:0',
+            'total_credit_payments' => 'nullable|numeric|min:0',
+            'total_card_payments' => 'nullable|numeric|min:0',
+            'total_qris_payments' => 'nullable|numeric|min:0',
+        ]);
+
         try {
-            DB::transaction(function () use ($shift) {
+            DB::transaction(function () use ($shift, $validated) {
                 $sales = $shift->sales(); // Mengambil query builder relasi sales
 
                 // Kalkulasi total dari semua penjualan selama shift ini
-                $totalSales = $sales->sum('total_amount');
                 $totalCash = $sales->where('payment_method', 'cash')->sum('amount_paid');
                 $totalBank = $sales->where('payment_method', 'bank')->sum('amount_paid');
+                $totalCard = $sales->where('payment_method', 'card')->sum('amount_paid');
+                $totalCredit = $sales->where('payment_method', 'credit')->sum('amount_paid');
+                $totalQris = $sales->where('payment_method', 'qris')->sum('amount_paid');
                 // ...tambahkan kalkulasi untuk metode pembayaran lain jika perlu
 
                 $shift->update([
                     'end_shift' => Carbon::now(),
+                    'ending_balance' => $validated['ending_balance'], // Hitung saldo akhir
+                    'actual_balance' => $validated['actual_balance'], // Hitung saldo akhir
                     'status' => 'closed',
-                    'total_sales' => $totalSales,
+                    'total_sales' => $validated['total_sales'], // Total penjualan selama shift
                     'total_cash_payments' => $totalCash,
                     'total_bank_payments' => $totalBank,
+                    'total_qris_payments' => $totalQris,
+                    'total_credit_payments' => $totalCredit,
+                    'total_card_payments' => $totalCard,
                     // ...update total lainnya
                 ]);
             });
@@ -115,6 +133,17 @@ class ShiftController extends Controller
         // Tambahkan filter jika perlu, misalnya berdasarkan tanggal
         if ($request->filled('date')) {
             $query->whereDate('start_shift', $request->date);
+        }
+
+
+
+        // Search by transaction number or customer name
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('starting_balance', 'like', "%{$search}%")
+                    ->orWhere('ending_balance', 'like', "%{$search}%");
+            });
         }
 
         $shifts = $query->latest()->paginate($limit);

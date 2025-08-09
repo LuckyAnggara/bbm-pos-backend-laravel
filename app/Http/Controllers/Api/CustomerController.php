@@ -17,12 +17,18 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         try {
-            $limit = $request->input('limit', 15);
+            $limit = $request->input('limit', 5);
             $search = $request->input('search');
 
+            // Filter berdasarkan branch_id (Wajib ada)
+            $request->validate(['branch_id' => 'required|exists:branches,id']);
             $query = Customer::with('branch');
 
-            if ($search) {
+            $query->where('branch_id', $request->branch_id);
+
+
+            if ($request->filled('search')) {
+                $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
