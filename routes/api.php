@@ -66,8 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sales/{sale}/reject-action', [SaleController::class, 'rejectAction']);
     Route::get('/sales-list-request', [SaleController::class, 'listRequest']);
 
-    // TAMBAHKAN DUA BARIS INI
     Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receiveOrder']);
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
     Route::apiResource('supplier-payments', SupplierPaymentController::class);
+    // Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receiveOrder']);
+    Route::put('/purchase-orders/{purchase_order}/status', [PurchaseOrderController::class, 'updateStatus']); // <-- TAMBAHKAN INI
+    Route::apiResource('purchase-orders', PurchaseOrderController::class);
 });

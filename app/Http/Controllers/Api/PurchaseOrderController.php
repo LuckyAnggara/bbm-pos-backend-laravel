@@ -117,56 +117,56 @@ class PurchaseOrderController extends Controller
      */
     public function show(PurchaseOrder $purchaseOrder)
     {
-        return $purchaseOrder->load(['supplier', 'branch', 'user', 'purchaseOrderDetails.product']);
+        return $purchaseOrder->load(['supplier', 'branch', 'user', 'purchaseOrderDetails.product', 'payments']);
     }
 
-    /**
-     * Mark a purchase order as completed and update stock.
-     */
-    public function receiveOrder(PurchaseOrder $purchaseOrder)
-    {
-        if ($purchaseOrder->status !== 'pending') {
-            return response()->json(['message' => 'This order cannot be received.'], 422);
-        }
+    // /**
+    //  * Mark a purchase order as completed and update stock.
+    //  */
+    // public function receiveOrder(PurchaseOrder $purchaseOrder)
+    // {
+    //     if ($purchaseOrder->status !== 'pending') {
+    //         return response()->json(['message' => 'This order cannot be received.'], 422);
+    //     }
 
-        try {
-            DB::transaction(function () use ($purchaseOrder) {
-                foreach ($purchaseOrder->purchaseOrderDetails as $detail) {
-                    $product = Product::findOrFail($detail->product_id);
+    //     try {
+    //         DB::transaction(function () use ($purchaseOrder) {
+    //             foreach ($purchaseOrder->purchaseOrderDetails as $detail) {
+    //                 $product = Product::findOrFail($detail->product_id);
 
-                    $stockBefore = $product->quantity;
-                    $quantityChange = $detail->ordered_quantity; // Positif karena pembelian
+    //                 $stockBefore = $product->quantity;
+    //                 $quantityChange = $detail->ordered_quantity; // Positif karena pembelian
 
-                    // Tambah stok produk
-                    $product->increment('quantity', $quantityChange);
+    //                 // Tambah stok produk
+    //                 $product->increment('quantity', $quantityChange);
 
-                    // Catat mutasi stok
-                    StockMutation::create([
-                        'branch_id' => $purchaseOrder->branch_id,
-                        'product_id' => $product->id,
-                        'product_name' => $product->name,
-                        'quantity_change' => $quantityChange,
-                        'stock_before' => $stockBefore,
-                        'stock_after' => $product->fresh()->quantity,
-                        'type' => 'purchase',
-                        'description' => 'Stock from PO ' . $purchaseOrder->po_number,
-                        'reference_type' => PurchaseOrder::class,
-                        'reference_id' => $purchaseOrder->id,
-                        'user_id' => auth()->id(),
-                        'user_name' => auth()->user()->name,
-                    ]);
-                }
+    //                 // Catat mutasi stok
+    //                 StockMutation::create([
+    //                     'branch_id' => $purchaseOrder->branch_id,
+    //                     'product_id' => $product->id,
+    //                     'product_name' => $product->name,
+    //                     'quantity_change' => $quantityChange,
+    //                     'stock_before' => $stockBefore,
+    //                     'stock_after' => $product->fresh()->quantity,
+    //                     'type' => 'purchase',
+    //                     'description' => 'Stock from PO ' . $purchaseOrder->po_number,
+    //                     'reference_type' => PurchaseOrder::class,
+    //                     'reference_id' => $purchaseOrder->id,
+    //                     'user_id' => auth()->id(),
+    //                     'user_name' => auth()->user()->name,
+    //                 ]);
+    //             }
 
-                // Update status PO
-                $purchaseOrder->update(['status' => 'completed']);
-            });
+    //             // Update status PO
+    //             $purchaseOrder->update(['status' => 'completed']);
+    //         });
 
-            return response()->json(['message' => 'Order received and stock updated successfully.']);
-        } catch (\Exception $e) {
-            Log::error("Error receiving PO {$purchaseOrder->id}: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to receive order.'], 500);
-        }
-    }
+    //         return response()->json(['message' => 'Order received and stock updated successfully.']);
+    //     } catch (\Exception $e) {
+    //         Log::error("Error receiving PO {$purchaseOrder->id}: " . $e->getMessage());
+    //         return response()->json(['message' => 'Failed to receive order.'], 500);
+    //     }
+    // }
 
 
     /**
@@ -185,5 +185,128 @@ class PurchaseOrderController extends Controller
             Log::error("Error canceling PO {$purchaseOrder->id}: " . $e->getMessage());
             return response()->json(['message' => 'Failed to cancel order.'], 500);
         }
+    }
+
+    /**
+     * [BARU] Menerima barang per item (parsial atau penuh).
+     * Ini akan menambah stok dan mengubah status PO menjadi 'partially_received' or 'completed'.
+     */
+    public function receiveOrder(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        // Validasi: Pastikan PO bisa diterima & data item yang masuk valid
+        if (!in_array($purchaseOrder->status, ['pending', 'partially_received'])) {
+            return response()->json(['message' => 'Hanya PO dengan status "pending" atau "partially received" yang bisa diterima.'], 422);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.purchase_order_detail_id' => 'required|exists:purchase_order_details,id',
+            'items.*.quantity_received' => 'required|integer|min:1',
+        ]);
+
+        try {
+            DB::transaction(function () use ($purchaseOrder, $validated) {
+                foreach ($validated['items'] as $itemData) {
+                    $detail = PurchaseOrderDetail::find($itemData['purchase_order_detail_id']);
+                    $product = Product::find($detail->product_id);
+
+                    // Validasi agar jumlah terima tidak melebihi pesanan
+                    $newReceivedQty = $detail->received_quantity + $itemData['quantity_received'];
+                    if ($newReceivedQty > $detail->ordered_quantity) {
+                        throw new \Exception("Jumlah terima untuk {$product->name} melebihi jumlah pesanan.");
+                    }
+
+                    // 1. Update jumlah diterima di detail PO
+                    $detail->update(['received_quantity' => $newReceivedQty]);
+
+                    // 2. Tambah stok produk & catat mutasi
+                    if ($product) {
+                        $stockBefore = $product->quantity;
+                        $product->increment('quantity', $itemData['quantity_received']);
+
+                        StockMutation::create([
+                            'branch_id' => $purchaseOrder->branch_id,
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'quantity_change' => $itemData['quantity_received'],
+                            'stock_before' => $stockBefore,
+                            'stock_after' => $product->fresh()->quantity,
+                            'type' => 'purchase',
+                            'description' => "Penerimaan barang dari PO #{$purchaseOrder->po_number}",
+                            'reference_type' => PurchaseOrder::class,
+                            'reference_id' => $purchaseOrder->id,
+                            'user_id' => auth()->id(),
+                            'user_name' => auth()->user()->name,
+                        ]);
+                    }
+                }
+
+                // 3. Cek dan update status PO utama setelah semua item diproses
+                $totalOrdered = $purchaseOrder->purchaseOrderDetails()->sum('ordered_quantity');
+                $totalReceived = $purchaseOrder->purchaseOrderDetails()->sum('received_quantity');
+
+                if ($totalReceived >= $totalOrdered) {
+                    $newStatus = 'completed';
+                } else {
+                    $newStatus = 'partially_received';
+                }
+
+                $purchaseOrder->update(['status' => $newStatus]);
+            });
+
+            return response()->json(['message' => 'Barang berhasil diterima dan stok telah diperbarui.']);
+        } catch (\Exception $e) {
+            Log::error("Error receiving PO {$purchaseOrder->id}: " . $e->getMessage());
+            return response()->json(['message' => 'Gagal menerima barang: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * [BARU] Mengubah status PO, misal dari 'draft' ke 'pending' (ordered).
+     */
+    public function updateStatus(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:draft,ordered,partially_received,fully_received,cancelled',
+        ]);
+
+        $oldStatus = $purchaseOrder->status;
+        $newStatus = $validated['status'];
+
+        // If reverting from received (partially/fully) to draft/ordered, rollback stock and received_quantity
+        $receivedStatuses = ['partially_received', 'fully_received', 'completed'];
+        $resetStatuses = ['draft', 'ordered'];
+        if (in_array($oldStatus, $receivedStatuses) && in_array($newStatus, $resetStatuses)) {
+            DB::transaction(function () use ($purchaseOrder, $newStatus) {
+                foreach ($purchaseOrder->purchaseOrderDetails as $detail) {
+                    $product = Product::find($detail->product_id);
+                    if ($product && $detail->received_quantity > 0) {
+                        $stockBefore = $product->quantity;
+                        $product->decrement('quantity', $detail->received_quantity);
+                        $stockAfter = $product->fresh()->quantity;
+                        StockMutation::create([
+                            'branch_id' => $purchaseOrder->branch_id,
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'quantity_change' => -$detail->received_quantity,
+                            'stock_before' => $stockBefore,
+                            'stock_after' => $stockAfter,
+                            'type' => 'rollback',
+                            'description' => 'Rollback PO #' . $purchaseOrder->po_number . ' ke status ' . $newStatus,
+                            'reference_type' => PurchaseOrder::class,
+                            'reference_id' => $purchaseOrder->id,
+                            'user_id' => auth()->id(),
+                            'user_name' => auth()->user() ? auth()->user()->name : null,
+                        ]);
+                    }
+                    $detail->update(['received_quantity' => 0]);
+                }
+            });
+        }
+
+        $purchaseOrder->update(['status' => $newStatus]);
+
+        return response()->json($purchaseOrder->fresh());
     }
 }

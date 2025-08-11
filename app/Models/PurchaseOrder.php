@@ -81,6 +81,12 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
+
     /**
      * Get the details for the purchase order.
      */
