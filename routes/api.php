@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseOrderController;
 use App\Http\Controllers\Api\SaleController;
+use App\Http\Controllers\Api\CustomerPaymentController;
 use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SupplierPaymentController;
@@ -53,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Rute untuk Riwayat Penjualan ---
     Route::apiResource('sales', SaleController::class)->only(['index', 'show']);
+    Route::apiResource('customer-payments', CustomerPaymentController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // --- Rute Khusus untuk Shift ---
     Route::prefix('shifts')->group(function () {

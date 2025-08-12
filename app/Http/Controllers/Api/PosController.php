@@ -26,6 +26,9 @@ class PosController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'payment_method' => 'required|string',
             'amount_paid' => 'required|numeric|min:0',
+            'tax_amount' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'outstanding_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'change_given' => 'nullable|numeric',
             'items' => 'required|array|min:1',
@@ -33,7 +36,9 @@ class PosController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.discount_amount' => 'sometimes|numeric|min:0',
             'bank_transaction_ref' => 'nullable|string',
-            'bank_name' => 'nullable|string'
+            'bank_name' => 'nullable|string',
+            'is_credit_sale' => 'sometimes|boolean',
+            'credit_due_date' => 'nullable|date',
         ]);
 
         $user = auth()->user();
@@ -68,10 +73,18 @@ class PosController extends Controller
             }
 
             // Anda bisa tambahkan logika Tax dan Shipping Cost di sini jika perlu
-            $taxAmount = 0; // Contoh: ($subtotal - $totalItemDiscount) * 0.11;
-            $shippingCost = 0;
+            $taxAmount = $validated['tax_amount']; // Contoh: ($subtotal - $totalItemDiscount) * 0.11;
+            $shippingCost = $validated['shipping_cost'] ?? 0;
 
             $totalAmount = ($subtotal - $totalItemDiscount) + $taxAmount + $shippingCost;
+
+            // Tentukan status pembayaran & outstanding untuk kredit
+            $isCredit = (bool)($validated['is_credit_sale'] ?? false);
+            $amountPaid = (float)($validated['amount_paid'] ?? 0);
+            $outstanding = $isCredit ? max(0, $totalAmount - $amountPaid) : 0;
+            $paymentStatus = $isCredit
+                ? ($outstanding <= 0 ? 'paid' : ($amountPaid > 0 ? 'partially_paid' : 'unpaid'))
+                : 'paid';
 
             // 2. Buat record Sale (header transaksi)
             $sale = Sale::create([
@@ -90,11 +103,14 @@ class PosController extends Controller
                 'total_amount' => $totalAmount,
                 'total_cogs' => $totalCost,
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => 'paid',
-                'amount_paid' => $validated['amount_paid'],
-                'change_given' => $validated['change_given'] ?? 0,
+                'payment_status' => $paymentStatus,
+                'amount_paid' => $amountPaid,
+                'change_given' => $isCredit ? 0 : ($validated['change_given'] ?? 0),
                 'notes' => $validated['notes'] ?? null,
                 'bank_transaction_ref' => $validated['bank_transaction_ref'] ?? null,
+                'is_credit_sale' => $isCredit,
+                'credit_due_date' => $isCredit ? ($validated['credit_due_date'] ?? null) : null,
+                'outstanding_amount' => $outstanding,
             ]);
 
 

@@ -43,7 +43,7 @@ return new class extends Migration
                 ->comment('User yang membuat PO');
 
             // Sesuai gambar: isCreditPurchase
-            $table->boolean('is_credit_purchase')->default(false);
+            $table->boolean('is_credit')->default(false);
 
             // Sesuai gambar: paymentTermsOnPO
             $table->string('payment_terms')->nullable();

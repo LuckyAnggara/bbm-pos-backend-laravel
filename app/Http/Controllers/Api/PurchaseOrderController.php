@@ -25,8 +25,20 @@ class PurchaseOrderController extends Controller
             $limit = $request->input('limit', 15);
             $search = $request->input('search');
             $status = $request->input('status');
+            $paymentStatus = $request->input('payment_status');
 
             $query = PurchaseOrder::with(['supplier:id,name', 'branch:id,name']);
+
+            // Filter berdasarkan branch_id
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->branch_id);
+            }
+
+            // [BARU] Filter untuk halaman Accounts Payable
+            // Jika ada parameter has_outstanding=true, filter PO yang punya hutang
+            if ($request->boolean('has_outstanding')) {
+                $query->where('outstanding_amount', '>', 0);
+            }
 
             if ($search) {
                 $query->where('po_number', 'like', "%{$search}%")
@@ -35,6 +47,11 @@ class PurchaseOrderController extends Controller
 
             if ($status) {
                 $query->where('status', $status);
+            }
+
+            // Optional: filter by payment_status (unpaid, partially_paid, paid)
+            if ($paymentStatus) {
+                $query->where('payment_status', $paymentStatus);
             }
 
             $purchaseOrders = $query->latest()->paginate($limit);
@@ -55,6 +72,10 @@ class PurchaseOrderController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'order_date' => 'required|date',
             'notes' => 'nullable|string',
+            'is_credit_purchase' => 'sometimes|boolean',
+            'payment_terms' => 'nullable|string',
+            'expected_delivery_date' => 'nullable|date',
+            'payment_due_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             // Sesuaikan dengan nama kolom di frontend/request
             'items.*.product_id' => 'required|exists:products,id',
@@ -73,6 +94,10 @@ class PurchaseOrderController extends Controller
 
                 $totalAmount = $subtotal; // Tambahkan logika tax/shipping jika perlu
 
+                $isCredit = (bool)($validated['is_credit_purchase'] ?? false);
+                $paymentDueDate = $validated['payment_due_date'] ?? null;
+                $expectedDate = $validated['expected_delivery_date'] ?? null;
+
                 $purchaseOrder = PurchaseOrder::create([
                     'po_number' => 'PO-' . time(),
                     'branch_id' => $validated['branch_id'],
@@ -81,10 +106,14 @@ class PurchaseOrderController extends Controller
                     'order_date' => Carbon::parse($validated['order_date']),
                     'user_id' => auth()->id(),
                     'status' => 'pending',
-                    'payment_status' => 'unpaid',
+                    'is_credit_purchase' => $isCredit,
+                    'payment_terms' => $validated['payment_terms'] ?? null,
+                    'expected_delivery_date' => $expectedDate ? Carbon::parse($expectedDate) : null,
+                    'payment_due_date' => $paymentDueDate ? Carbon::parse($paymentDueDate) : null,
+                    'payment_status' => $isCredit ? 'unpaid' : 'paid',
                     'subtotal' => $subtotal,
                     'total_amount' => $totalAmount,
-                    'outstanding_amount' => $totalAmount,
+                    'outstanding_amount' => $isCredit ? $totalAmount : 0,
                     'notes' => $validated['notes'] ?? null,
                 ]);
 

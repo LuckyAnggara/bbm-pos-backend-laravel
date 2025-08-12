@@ -33,6 +33,7 @@ return new class extends Migration
             $table->decimal('amount_paid', 15, 2)->default(0);
             $table->string('payment_method');
             $table->string('recorded_by_user_id')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

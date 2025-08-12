@@ -22,6 +22,7 @@ class SupplierPaymentController extends Controller
             'amount_paid' => 'required|numeric|gt:0', // Harus lebih besar dari 0
             'payment_date' => 'required|date',
             'payment_method' => 'required|string',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         try {
@@ -41,6 +42,7 @@ class SupplierPaymentController extends Controller
                     'payment_date' => Carbon::parse($validated['payment_date']),
                     'amount_paid' => $validated['amount_paid'],
                     'payment_method' => $validated['payment_method'],
+                    'notes' => $validated['notes'] ?? null,
                     'recorded_by_user_id' => auth()->id(),
                 ]);
 
@@ -75,5 +77,64 @@ class SupplierPaymentController extends Controller
             ->get();
 
         return response()->json($payments);
+    }
+
+    /**
+     * Update an existing supplier payment and adjust the related PO's outstanding amount.
+     */
+    public function update(Request $request, SupplierPayment $supplierPayment)
+    {
+        $validated = $request->validate([
+            'payment_date' => 'sometimes|date',
+            'amount_paid' => 'sometimes|numeric|gt:0',
+            'payment_method' => 'sometimes|string',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $updatedPayment = DB::transaction(function () use ($supplierPayment, $validated) {
+                $purchaseOrder = $supplierPayment->purchaseOrder()->lockForUpdate()->first();
+
+                $oldAmount = (float) $supplierPayment->amount_paid;
+                $newAmount = array_key_exists('amount_paid', $validated)
+                    ? (float) $validated['amount_paid']
+                    : $oldAmount;
+
+                // Prevent overpayment beyond current outstanding + the old amount of this payment
+                $allowedMax = (float) $purchaseOrder->outstanding_amount + $oldAmount;
+                if ($newAmount > $allowedMax) {
+                    abort(422, 'Payment amount exceeds the outstanding balance.');
+                }
+
+                $delta = $newAmount - $oldAmount; // positive reduces outstanding
+                $newOutstanding = (float) $purchaseOrder->outstanding_amount - $delta;
+                if ($newOutstanding < 0) {
+                    $newOutstanding = 0.0;
+                }
+
+                // Update payment fields
+                $supplierPayment->update([
+                    'payment_date' => array_key_exists('payment_date', $validated)
+                        ? \Carbon\Carbon::parse($validated['payment_date'])
+                        : $supplierPayment->payment_date,
+                    'amount_paid' => $newAmount,
+                    'payment_method' => $validated['payment_method'] ?? $supplierPayment->payment_method,
+                    'notes' => $validated['notes'] ?? $supplierPayment->notes,
+                ]);
+
+                // Update PO outstanding and status
+                $purchaseOrder->update([
+                    'outstanding_amount' => $newOutstanding,
+                    'payment_status' => $newOutstanding <= 0 ? 'paid' : 'partially_paid',
+                ]);
+
+                return $supplierPayment->fresh();
+            });
+
+            return response()->json($updatedPayment);
+        } catch (\Exception $e) {
+            Log::error('Supplier Payment Update Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to update payment: ' . $e->getMessage()], 500);
+        }
     }
 }

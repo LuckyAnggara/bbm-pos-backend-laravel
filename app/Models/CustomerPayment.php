@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SupplierPayment extends Model
+class CustomerPayment extends Model
 {
     use HasFactory;
 
@@ -16,9 +16,9 @@ class SupplierPayment extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'purchase_order_id',
+        'sale_id',
         'branch_id',
-        'supplier_id',
+        'customer_id',
         'payment_date',
         'amount_paid',
         'payment_method',
@@ -36,27 +36,18 @@ class SupplierPayment extends Model
         'amount_paid' => 'decimal:2',
     ];
 
-    /**
-     * Get the purchase order that this payment is for.
-     */
-    public function purchaseOrder(): BelongsTo
+    public function sale(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->belongsTo(Sale::class);
     }
 
-    /**
-     * Get the supplier that received the payment.
-     */
-    public function supplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    /**
-     * Get the branch where the payment was recorded.
-     */
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

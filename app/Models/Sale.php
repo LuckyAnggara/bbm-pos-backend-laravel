@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\CustomerPayment;
 
 class Sale extends Model
 {
@@ -81,6 +82,14 @@ class Sale extends Model
     {
         // Asumsi nama modelnya adalah SaleDetail
         return $this->hasMany(SaleDetail::class);
+    }
+
+    /**
+     * Payments recorded toward this credit sale.
+     */
+    public function customerPayments(): HasMany
+    {
+        return $this->hasMany(CustomerPayment::class);
     }
 
     public function branch(): BelongsTo

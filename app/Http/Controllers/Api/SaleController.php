@@ -9,6 +9,7 @@ use App\Models\StockMutation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class SaleController extends Controller
 {
@@ -24,18 +25,47 @@ class SaleController extends Controller
 
             // Filter by date range
             if ($request->filled('start_date') && $request->filled('end_date')) {
-                $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+                $start = Carbon::parse($request->start_date)->startOfDay();
+                $end = Carbon::parse($request->end_date)->endOfDay();
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+
+            // Filter by branch
+            if ($request->filled('branch_id')) {
+                if ($request->branch_id === 'all') {
+                    $query->whereNotNull('branch_id');
+                } else {
+                    $query->where('branch_id', $request->branch_id);
+                }
             }
 
             // Filter by status
             if ($request->filled('status')) {
-                $query->where('status', $request->status);
+                if ($request->status === 'all') {
+                    // keep all
+                } else {
+                    $query->where('status', $request->status);
+                }
             }
 
             // Filter by payment status
             if ($request->filled('payment_status')) {
-                $query->where('payment_status', $request->payment_status);
+                if ($request->payment_status === 'all') {
+                    // no-op
+                } else {
+                    $query->where('payment_status', $request->payment_status);
+                }
             }
+
+            // Filter has_outstanding
+            if ($request->filled('has_outstanding') && $request->boolean('has_outstanding')) {
+                $query->where('outstanding_amount', '>', 0);
+            }
+
+            // Only credit sales if requested
+            // if ($request->filled('is_credit_sale')) {
+            //     $query->where('is_credit_sale', true);
+            // }
 
             if ($request->filled('shift_id')) {
                 $query->where('shift_id', $request->shift_id);
@@ -70,7 +100,8 @@ class SaleController extends Controller
             'customer',
             'branch',
             // Load sale details, and for each detail, load the product info
-            'saleDetails.product:id,name,sku'
+            'saleDetails.product:id,name,sku',
+            'customerPayments'
         ]);
     }
 
