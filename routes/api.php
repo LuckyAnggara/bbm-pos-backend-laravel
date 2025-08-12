@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BankAccountController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseOrderController;
@@ -72,4 +73,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receiveOrder']);
     Route::put('/purchase-orders/{purchase_order}/status', [PurchaseOrderController::class, 'updateStatus']); // <-- TAMBAHKAN INI
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
+
+    Route::apiResource('expenses', ExpenseController::class);
 });

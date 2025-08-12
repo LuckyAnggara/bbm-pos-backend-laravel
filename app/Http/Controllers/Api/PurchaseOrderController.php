@@ -194,8 +194,8 @@ class PurchaseOrderController extends Controller
     public function receiveOrder(Request $request, PurchaseOrder $purchaseOrder)
     {
         // Validasi: Pastikan PO bisa diterima & data item yang masuk valid
-        if (!in_array($purchaseOrder->status, ['pending', 'partially_received'])) {
-            return response()->json(['message' => 'Hanya PO dengan status "pending" atau "partially received" yang bisa diterima.'], 422);
+        if (!in_array($purchaseOrder->status, ['ordered', 'pending', 'partially_received'])) {
+            return response()->json(['message' => 'Hanya PO dengan status "ordered", "pending" atau "partially received" yang bisa diterima.'], 422);
         }
 
         $validated = $request->validate([
@@ -246,7 +246,8 @@ class PurchaseOrderController extends Controller
                 $totalReceived = $purchaseOrder->purchaseOrderDetails()->sum('received_quantity');
 
                 if ($totalReceived >= $totalOrdered) {
-                    $newStatus = 'completed';
+                    // Selaraskan dengan enum/status frontend: gunakan 'fully_received'
+                    $newStatus = 'fully_received';
                 } else {
                     $newStatus = 'partially_received';
                 }

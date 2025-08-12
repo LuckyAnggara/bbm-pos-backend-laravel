@@ -15,27 +15,42 @@ class ExpenseController extends Controller
      */
     public function index(Request $request)
     {
-        try {
-            $limit = $request->input('limit', 15);
-            $query = Expense::with(['branch:id,name', 'user:id,name']);
+        $limit = $request->input('limit', 15);
+        $query = Expense::with(['branch:id,name', 'user:id,name']);
 
-            // Filter by category
-            if ($request->filled('category')) {
-                $query->where('category', $request->category);
-            }
+        // Filter berdasarkan branch_id (Wajib ada)
+        $request->validate(['branch_id' => 'required|exists:branches,id']);
+        $query->where('branch_id', $request->branch_id);
 
-            // Filter by date range
-            if ($request->filled('start_date') && $request->filled('end_date')) {
-                $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
-            }
-
-            $expenses = $query->latest()->paginate($limit);
-
-            return response()->json($expenses);
-        } catch (\Exception $e) {
-            Log::error('Error fetching expenses: ' . $e->getMessage());
-            return response()->json(['message' => 'Internal Server Error'], 500);
+        // Filter berdasarkan kategori (mendukung single atau array)
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
         }
+        if ($request->has('categories')) {
+            $categories = $request->input('categories');
+            if (is_array($categories) && count($categories) > 0) {
+                $query->whereIn('category', $categories);
+            }
+        }
+
+        // Filter berdasarkan rentang tanggal (inklusif untuk keseluruhan hari)
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date)
+                ->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        // Pencarian sederhana pada deskripsi atau kategori
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+
+        $expenses = $query->latest()->paginate($limit);
+
+        return response()->json($expenses);
     }
 
     /**
