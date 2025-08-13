@@ -16,6 +16,9 @@ use App\Http\Controllers\Api\CustomerPaymentController;
 use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SupplierPaymentController;
+use App\Http\Controllers\Api\FinancialReportController;
+use App\Http\Controllers\Api\StockMutationReportController;
+use App\Http\Controllers\Api\StockMovementReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,4 +80,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
 
     Route::apiResource('expenses', ExpenseController::class);
+
+    // Reports generate & fetch
+    Route::post('/reports/generate', [FinancialReportController::class, 'generate']);
+    Route::get('/reports', [FinancialReportController::class, 'index']);
+
+    // Stock Mutation Reports (generate via internal flow, fetch, and live compute)
+    Route::post('/stock-mutation-reports/generate', [StockMutationReportController::class, 'generate']);
+    Route::get('/stock-mutation-reports', [StockMutationReportController::class, 'index']);
+    Route::get('/stock-mutation-reports/live', [StockMutationReportController::class, 'live']);
+
+    // Stock Movement Reports per-product
+    Route::post('/stock-movement-reports/generate', [StockMovementReportController::class, 'generate']);
+    Route::get('/stock-movement-reports', [StockMovementReportController::class, 'index']);
+    Route::get('/stock-movement-reports/live', [StockMovementReportController::class, 'live']);
 });

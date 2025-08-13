@@ -30,6 +30,17 @@ class SaleController extends Controller
                 $query->whereBetween('created_at', [$start, $end]);
             }
 
+            // Filter by payment_status_term
+            if ($request->filled('payment_status_term')) {
+                if ($request->payment_status_term === 'all') {
+                    $query->whereNotNull('is_credit_sale');
+                } else if ($request->payment_status_term === 'cash') {
+                    $query->where('is_credit_sale', false);
+                } else if ($request->payment_status_term === 'credit') {
+                    $query->where('is_credit_sale', true);
+                }
+            }
+
             // Filter by branch
             if ($request->filled('branch_id')) {
                 if ($request->branch_id === 'all') {

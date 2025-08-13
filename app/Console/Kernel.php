@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Nightly stock mutation report generation at 23:30
+        $schedule->command('reports:generate-stock-mutation')->dailyAt('23:30');
+        // Nightly stock movement per-product report generation at 23:45
+        $schedule->command('reports:generate-stock-movement')->dailyAt('23:45');
     }
 
     /**
@@ -20,7 +23,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
