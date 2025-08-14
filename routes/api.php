@@ -38,6 +38,18 @@ Route::post('/login', [UserController::class, 'login']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Stock Opname routes
+    Route::get('/stock-opname', [\App\Http\Controllers\StockOpnameController::class, 'index']);
+    Route::post('/stock-opname', [\App\Http\Controllers\StockOpnameController::class, 'store']);
+    Route::get('/stock-opname/{session}', [\App\Http\Controllers\StockOpnameController::class, 'show']);
+    Route::put('/stock-opname/{session}', [\App\Http\Controllers\StockOpnameController::class, 'update']);
+    Route::post('/stock-opname/{session}/items', [\App\Http\Controllers\StockOpnameController::class, 'addItem']);
+    Route::delete('/stock-opname/{session}/items/{item}', [\App\Http\Controllers\StockOpnameController::class, 'removeItem']);
+    Route::post('/stock-opname/{session}/submit', [\App\Http\Controllers\StockOpnameController::class, 'submit']);
+    Route::post('/stock-opname/{session}/approve', [\App\Http\Controllers\StockOpnameController::class, 'approve']);
+    Route::post('/stock-opname/{session}/reject', [\App\Http\Controllers\StockOpnameController::class, 'reject']);
+    Route::post('/stock-opname/{session}/import', [\App\Http\Controllers\StockOpnameController::class, 'importCsv']);
+    Route::get('/stock-opname/{session}/export', [\App\Http\Controllers\StockOpnameController::class, 'exportCsv']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
