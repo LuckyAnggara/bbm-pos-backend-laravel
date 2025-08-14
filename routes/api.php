@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\SupplierPaymentController;
 use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\StockMutationReportController;
 use App\Http\Controllers\Api\StockMovementReportController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,4 +95,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/stock-movement-reports/generate', [StockMovementReportController::class, 'generate']);
     Route::get('/stock-movement-reports', [StockMovementReportController::class, 'index']);
     Route::get('/stock-movement-reports/live', [StockMovementReportController::class, 'live']);
+
+    // Dashboard summary
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    // Inventory year snapshots
+    Route::get('/inventory/year-status', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'yearStatus']);
+    Route::get('/inventory/branch-status', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'branchStatus']);
+    Route::post('/inventory/close-year', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'closeYear']);
+    Route::post('/inventory/close-year-branch', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'closeYearBranch']);
+    Route::post('/inventory/open-year', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'openYear']);
+    Route::post('/inventory/open-year-branch', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'openYearBranch']);
+    Route::get('/inventory/closing-detail/{year}', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'closingDetail']);
+    Route::get('/inventory/closing-export/{year}', [\App\Http\Controllers\Api\InventorySnapshotController::class, 'exportClosingCsv']);
+    // Notifications
+    Route::post('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'store']);
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/{notification}/dismiss', [\App\Http\Controllers\Api\NotificationController::class, 'dismiss']);
 });

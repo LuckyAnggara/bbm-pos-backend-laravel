@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,   // Harus ada dulu
             SupplierSeeder::class,
             CustomerSeeder::class,
-            // ProductSeeder::class,    // Baru bisa dijalankan
+            ProductSeeder::class,    // Baru bisa dijalankan
         ]);
     }
 }

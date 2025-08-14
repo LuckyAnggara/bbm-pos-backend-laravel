@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMutation;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -187,6 +189,11 @@ class SaleController extends Controller
             'returned_by_user_id' => auth()->id(),
         ]);
 
+        // Create notifications for all admins (broadcast) - per admin later if needed
+        $title = $newStatus === 'pending_return' ? 'Permintaan Retur Penjualan' : 'Permintaan Void Penjualan';
+        $message = sprintf('%s #%s diajukan oleh %s. Alasan: %s', ucfirst($validated['action_type']), $sale->transaction_number, auth()->user()->name, $validated['reason']);
+        $this->broadcastAdminNotification($title, $message, 'sale_action', null);
+
         return response()->json($sale);
     }
 
@@ -237,6 +244,10 @@ class SaleController extends Controller
                 ]);
             });
 
+            $title = $sale->status === 'returned' ? 'Retur Penjualan Disetujui' : 'Void Penjualan Disetujui';
+            $message = sprintf('%s #%s disetujui oleh %s', ucfirst($sale->status), $sale->transaction_number, auth()->user()->name);
+            $this->broadcastAdminNotification($title, $message, 'sale_action', null);
+
             return response()->json($sale->fresh());
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal memproses persetujuan: ' . $e->getMessage()], 500);
@@ -265,9 +276,32 @@ class SaleController extends Controller
                 ]);
             });
 
+            $title = 'Permintaan Aksi Ditolak';
+            $message = sprintf('Permintaan retur/void #%s ditolak oleh %s', $sale->transaction_number, auth()->user()->name);
+            $this->broadcastAdminNotification($title, $message, 'sale_action', null);
+
             return response()->json($sale->fresh());
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal memproses penolakan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function broadcastAdminNotification(string $title, string $message, string $category = 'general', ?string $link = null): void
+    {
+        try {
+            // Null user_id means visible to all; if we want per-admin rows uncomment below
+            // $admins = User::where('role','admin')->pluck('id');
+            Notification::create([
+                'user_id' => null,
+                'title' => $title,
+                'message' => $message,
+                'category' => $category,
+                'link_url' => $link,
+                'created_by' => auth()->id(),
+                'created_by_name' => auth()->user()->name ?? 'System'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed creating admin notification: ' . $e->getMessage());
         }
     }
 }
