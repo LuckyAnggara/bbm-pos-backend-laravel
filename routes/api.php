@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BankAccountController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseOrderController;
@@ -61,6 +63,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('users', UserController::class);
     Route::apiResource('bank-accounts', BankAccountController::class);
     Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('employees', EmployeeController::class);
+    Route::apiResource('payrolls', PayrollController::class);
+    Route::get('/employees-for-payroll', [PayrollController::class, 'getEmployeesForPayroll']);
+    Route::get('/employee-payslip', [PayrollController::class, 'getEmployeePayslip']);
+    Route::get('/payroll/{payrollId}/employee/{employeeId}/payslip', [PayrollController::class, 'getPayslip']);
     Route::apiResource('products', ProductController::class);
     // Product detail routes
     Route::get('/products/{product}/details', [ProductController::class, 'details']);
@@ -82,6 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('shifts')->group(function () {
         Route::get('/', [ShiftController::class, 'index']); // Riwayat shift
         Route::get('/active', [ShiftController::class, 'getActiveShift']); // Cek shift aktif
+        Route::get('/{id}', [ShiftController::class, 'show']); // Detail shift
+        Route::get('/{id}/transactions', [ShiftController::class, 'getShiftTransactions']); // Transaksi shift
         Route::post('/start', [ShiftController::class, 'startShift']); // Mulai shift
         Route::post('/end', [ShiftController::class, 'endShift']); // Akhiri shift
     });

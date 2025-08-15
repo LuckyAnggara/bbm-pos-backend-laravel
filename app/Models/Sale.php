@@ -107,9 +107,11 @@ class Sale extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    // Anda bisa tambahkan relasi untuk 'shift' jika modelnya sudah ada
-    // public function shift(): BelongsTo
-    // {
-    //     return $this->belongsTo(Shift::class);
-    // }
+    /**
+     * Get the shift where this sale occurred.
+     */
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
+    }
 }

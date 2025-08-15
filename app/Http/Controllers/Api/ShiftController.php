@@ -149,4 +149,44 @@ class ShiftController extends Controller
         $shifts = $query->latest()->paginate($limit);
         return response()->json($shifts);
     }
+
+    /**
+     * Get detailed information about a specific shift.
+     */
+    public function show($id)
+    {
+        try {
+            $shift = Shift::with(['user:id,name', 'branch:id,name'])
+                ->findOrFail($id);
+
+            // Calculate cash difference
+            $shift->cash_difference = $shift->actual_balance - $shift->ending_balance;
+
+            return response()->json($shift);
+        } catch (\Exception $e) {
+            Log::error("Error fetching shift {$id}: " . $e->getMessage());
+            return response()->json(['message' => 'Shift not found.'], 404);
+        }
+    }
+
+    /**
+     * Get all transactions that occurred during a specific shift.
+     */
+    public function getShiftTransactions($id)
+    {
+        try {
+            $shift = Shift::findOrFail($id);
+
+            // Get all sales that happened during this shift
+            $transactions = $shift->sales()
+                ->with(['customer:id,name'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json($transactions);
+        } catch (\Exception $e) {
+            Log::error("Error fetching transactions for shift {$id}: " . $e->getMessage());
+            return response()->json(['message' => 'Failed to fetch shift transactions.'], 500);
+        }
+    }
 }
