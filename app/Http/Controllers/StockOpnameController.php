@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{StockOpnameSession, StockOpnameItem, Product, StockMutation};
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,17 +16,22 @@ class StockOpnameController extends Controller
             ->where('branch_id', $request->user()->branch_id);
 
         if ($status = $request->query('status')) {
-            if ($query->$request->query('status') === 'semua') {
-                // No filter for 'semua'
-            } else {
+            if (strtolower($status) !== 'semua' && strtolower($status) !== 'all') {
                 $query->where('status', $status);
             }
         }
-        return response()->json($query->orderByDesc('id')->paginate(25));
+        $perPage = (int) $request->query('per_page', 25);
+        if ($perPage <= 0) {
+            $perPage = 25;
+        }
+        return response()->json($query->orderByDesc('id')->paginate($perPage));
     }
 
     public function store(Request $request)
     {
+        if (!$request->user()->branch_id) {
+            return response()->json(['message' => 'User belum terkait branch, tidak bisa membuat stock opname.'], 422);
+        }
         $data = $request->validate([
             'notes' => 'nullable|string',
         ]);
@@ -106,54 +112,100 @@ class StockOpnameController extends Controller
             return response()->json(['message' => 'No items to submit'], 422);
         }
         $session->update(['status' => 'SUBMIT', 'submitted_by' => $request->user()->id, 'submitted_at' => now()]);
+
+        // Send notification to admins
+        $notificationService = app(NotificationService::class);
+        $notificationService->sendStockOpnameSubmittedNotification($session, $request->user());
+
         return response()->json($session->fresh());
     }
 
     public function approve(Request $request, StockOpnameSession $session)
     {
-        if ($session->status !== 'SUBMIT') {
-            return response()->json(['message' => 'Only SUBMIT can be approved'], 422);
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Hanya admin yang bisa approve'], 403);
         }
-        DB::transaction(function () use ($session, $request) {
+
+        if ($session->status !== 'SUBMIT') {
+            return response()->json(['message' => 'Hanya session SUBMIT yang bisa di-approve'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update stock dan create stock mutations
             foreach ($session->items as $item) {
                 if ($item->difference !== 0) {
                     $product = Product::find($item->product_id);
                     if ($product) {
-                        $before = $product->quantity;
-                        $product->quantity = $item->counted_quantity; // set to counted
-                        $product->save();
-                        // Record stock mutation
-                        DB::table('stock_mutations')->insert([
+                        $oldStock = $product->quantity;
+                        $newStock = $item->counted_quantity;
+
+                        // Update product stock
+                        $product->update(['quantity' => $newStock]);
+
+                        // Create stock mutation record
+                        StockMutation::create([
                             'branch_id' => $session->branch_id,
                             'product_id' => $product->id,
                             'product_name' => $product->name,
                             'quantity_change' => $item->difference,
-                            'stock_before' => $before,
-                            'stock_after' => $product->quantity,
-                            'type' => 'stock_opname',
-                            'description' => 'Stock Opname ' . $session->code,
-                            'reference_type' => StockOpnameSession::class,
+                            'stock_before' => $oldStock,
+                            'stock_after' => $newStock,
+                            'type' => 'adjustment',
+                            'description' => "Stock Opname Adjustment - {$session->code}",
+                            'reference_type' => 'App\\Models\\StockOpnameSession',
                             'reference_id' => $session->id,
-                            'user_id' => $request->user()->id,
-                            'user_name' => $request->user()->name,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                            'user_id' => auth()->id(),
+                            'user_name' => auth()->user()->name,
                         ]);
                     }
                 }
             }
-            $session->update(['status' => 'APPROVED', 'approved_by' => $request->user()->id, 'approved_at' => now()]);
-        });
-        return response()->json($session->fresh());
+
+            // Update session status
+            $session->update([
+                'status' => 'APPROVED',
+                'approved_by' => auth()->id(),
+                'approved_at' => now()
+            ]);
+
+            // Send notification
+            $notificationService = app(NotificationService::class);
+            $notificationService->sendStockOpnameApprovedNotification($session, auth()->user());
+
+            DB::commit();
+            return response()->json($session->fresh());
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['message' => 'Error during approval: ' . $e->getMessage()], 500);
+        }
     }
 
     public function reject(Request $request, StockOpnameSession $session)
     {
-        if ($session->status !== 'SUBMIT') {
-            return response()->json(['message' => 'Only SUBMIT can be rejected'], 422);
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Hanya admin yang bisa reject'], 403);
         }
-        $data = $request->validate(['admin_notes' => 'required|string']);
-        $session->update(['status' => 'REJECTED', 'admin_notes' => $data['admin_notes'], 'rejected_at' => now()]);
+
+        if ($session->status !== 'SUBMIT') {
+            return response()->json(['message' => 'Hanya session SUBMIT yang bisa di-reject'], 422);
+        }
+
+        $data = $request->validate([
+            'admin_notes' => 'required|string|min:10',
+        ]);
+
+        $session->update([
+            'status' => 'REJECTED',
+            'admin_notes' => $data['admin_notes'],
+            'approved_by' => auth()->id(),
+            'rejected_at' => now()
+        ]);
+
+        // Send notification
+        $notificationService = app(NotificationService::class);
+        $notificationService->sendStockOpnameRejectedNotification($session, auth()->user(), $data['admin_notes']);
+
         return response()->json($session->fresh());
     }
 

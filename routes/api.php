@@ -62,6 +62,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('bank-accounts', BankAccountController::class);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
+    // Product detail routes
+    Route::get('/products/{product}/details', [ProductController::class, 'details']);
+    Route::get('/products/{product}/transactions', [ProductController::class, 'transactions']);
+    Route::get('/products/{product}/insights', [ProductController::class, 'insights']);
+    Route::get('/products/{product}/mutations', [ProductController::class, 'mutations']);
+
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('suppliers', SupplierController::class);
 
@@ -125,4 +131,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markRead']);
     Route::post('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
     Route::post('/notifications/{notification}/dismiss', [\App\Http\Controllers\Api\NotificationController::class, 'dismiss']);
+
+    // Admin Stock Opname Review - for admin to review all branches
+    Route::get('/admin/stock-opname-review', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'index']);
+    Route::get('/admin/stock-opname-review/{session}', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'show']);
+    Route::post('/admin/stock-opname-review/{session}/approve', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'approve']);
+    Route::post('/admin/stock-opname-review/{session}/reject', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'reject']);
 });

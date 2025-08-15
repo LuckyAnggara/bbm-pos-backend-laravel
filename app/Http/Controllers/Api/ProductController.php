@@ -84,6 +84,242 @@ class ProductController extends Controller
     }
 
     /**
+     * Get detailed product information with transactions, insights, and mutations
+     */
+    public function details(Product $product)
+    {
+        try {
+            // Load basic product information
+            $product->load(['category', 'branch']);
+
+            return response()->json($product);
+        } catch (\Exception $e) {
+            Log::error('Error fetching product details: ' . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
+     * Get product transaction history
+     */
+    public function transactions(Request $request, Product $product)
+    {
+        try {
+            $limit = $request->input('limit', 20);
+            $type = $request->input('type'); // 'sale', 'purchase', 'all'
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $transactions = collect();
+
+            // Get sales transactions
+            if (!$type || $type === 'sale' || $type === 'all') {
+                $sales = DB::table('sale_items')
+                    ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                    ->join('users', 'sales.user_id', '=', 'users.id')
+                    ->where('sale_items.product_id', $product->id)
+                    ->select([
+                        'sales.id as transaction_id',
+                        'sales.invoice_number as reference',
+                        'sale_items.quantity',
+                        'sale_items.unit_price as price',
+                        DB::raw('sale_items.quantity * sale_items.unit_price as total'),
+                        'sales.created_at',
+                        'users.name as user_name',
+                        DB::raw("'sale' as type"),
+                        DB::raw("'Penjualan' as type_label")
+                    ]);
+
+                if ($startDate) {
+                    $sales->whereDate('sales.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $sales->whereDate('sales.created_at', '<=', $endDate);
+                }
+
+                $transactions = $transactions->merge($sales->get());
+            }
+
+            // Get purchase transactions
+            if (!$type || $type === 'purchase' || $type === 'all') {
+                $purchases = DB::table('purchase_order_items')
+                    ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+                    ->join('users', 'purchase_orders.user_id', '=', 'users.id')
+                    ->where('purchase_order_items.product_id', $product->id)
+                    ->select([
+                        'purchase_orders.id as transaction_id',
+                        'purchase_orders.po_number as reference',
+                        'purchase_order_items.quantity',
+                        'purchase_order_items.unit_cost as price',
+                        DB::raw('purchase_order_items.quantity * purchase_order_items.unit_cost as total'),
+                        'purchase_orders.created_at',
+                        'users.name as user_name',
+                        DB::raw("'purchase' as type"),
+                        DB::raw("'Pembelian' as type_label")
+                    ]);
+
+                if ($startDate) {
+                    $purchases->whereDate('purchase_orders.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $purchases->whereDate('purchase_orders.created_at', '<=', $endDate);
+                }
+
+                $transactions = $transactions->merge($purchases->get());
+            }
+
+            // Sort by date descending
+            $transactions = $transactions->sortByDesc('created_at')->values();
+
+            // Paginate manually
+            $total = $transactions->count();
+            $page = $request->input('page', 1);
+            $offset = ($page - 1) * $limit;
+            $paginatedTransactions = $transactions->slice($offset, $limit)->values();
+
+            return response()->json([
+                'data' => $paginatedTransactions,
+                'total' => $total,
+                'per_page' => $limit,
+                'current_page' => $page,
+                'last_page' => ceil($total / $limit)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching product transactions: ' . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
+     * Get product insights and analytics
+     */
+    public function insights(Request $request, Product $product)
+    {
+        try {
+            $months = $request->input('months', 12); // Default 12 months
+
+            // Calculate date range
+            $endDate = now();
+            $startDate = now()->subMonths($months);
+
+            // Sales trend (monthly)
+            $salesTrend = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sale_items.product_id', $product->id)
+                ->whereDate('sales.created_at', '>=', $startDate)
+                ->select([
+                    DB::raw('YEAR(sales.created_at) as year'),
+                    DB::raw('MONTH(sales.created_at) as month'),
+                    DB::raw('SUM(sale_items.quantity) as quantity_sold'),
+                    DB::raw('SUM(sale_items.quantity * sale_items.unit_price) as revenue'),
+                    DB::raw('COUNT(DISTINCT sales.id) as transaction_count')
+                ])
+                ->groupBy(['year', 'month'])
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get();
+
+            // Total statistics
+            $totalSales = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sale_items.product_id', $product->id)
+                ->whereDate('sales.created_at', '>=', $startDate)
+                ->sum('sale_items.quantity');
+
+            $totalRevenue = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sale_items.product_id', $product->id)
+                ->whereDate('sales.created_at', '>=', $startDate)
+                ->sum(DB::raw('sale_items.quantity * sale_items.unit_price'));
+
+            $averagePrice = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sale_items.product_id', $product->id)
+                ->whereDate('sales.created_at', '>=', $startDate)
+                ->avg('sale_items.unit_price');
+
+            // Best selling day
+            $bestDay = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sale_items.product_id', $product->id)
+                ->whereDate('sales.created_at', '>=', $startDate)
+                ->select([
+                    DB::raw('DATE(sales.created_at) as date'),
+                    DB::raw('SUM(sale_items.quantity) as quantity_sold')
+                ])
+                ->groupBy('date')
+                ->orderByDesc('quantity_sold')
+                ->first();
+
+            return response()->json([
+                'sales_trend' => $salesTrend,
+                'statistics' => [
+                    'total_sales' => (int) $totalSales,
+                    'total_revenue' => (float) $totalRevenue,
+                    'average_price' => (float) $averagePrice,
+                    'best_selling_day' => $bestDay
+                ],
+                'period' => [
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                    'months' => $months
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching product insights: ' . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
+     * Get product stock mutations
+     */
+    public function mutations(Request $request, Product $product)
+    {
+        try {
+            $limit = $request->input('limit', 20);
+            $type = $request->input('type'); // 'adjustment', 'sale', 'purchase', 'all'
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $query = DB::table('stock_mutations')
+                ->where('product_id', $product->id);
+
+            if ($type && $type !== 'all') {
+                $query->where('type', $type);
+            }
+
+            if ($startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            }
+
+            if ($endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
+            }
+
+            $mutations = $query->select([
+                'id',
+                'quantity_change',
+                'stock_before',
+                'stock_after',
+                'type',
+                'description',
+                'reference_type',
+                'reference_id',
+                'user_name',
+                'created_at'
+            ])
+                ->orderByDesc('created_at')
+                ->paginate($limit);
+
+            return response()->json($mutations);
+        } catch (\Exception $e) {
+            Log::error('Error fetching product mutations: ' . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Product $product)
