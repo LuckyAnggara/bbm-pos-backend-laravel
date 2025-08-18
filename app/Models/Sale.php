@@ -48,6 +48,7 @@ class Sale extends Model
         'returned_at',
         'returned_reason',
         'returned_by_user_id',
+        'sales_id',
     ];
 
     /**
@@ -105,6 +106,11 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function salesEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'sales_id');
     }
 
     /**

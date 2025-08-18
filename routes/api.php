@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\StockMutationReportController;
 use App\Http\Controllers\Api\StockMovementReportController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\SalesReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,4 +147,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/stock-opname-review/{session}', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'show']);
     Route::post('/admin/stock-opname-review/{session}/approve', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'approve']);
     Route::post('/admin/stock-opname-review/{session}/reject', [\App\Http\Controllers\Api\AdminStockOpnameController::class, 'reject']);
+
+    // Sales Report Routes
+    Route::prefix('sales-report')->group(function () {
+        Route::get('/', [SalesReportController::class, 'index']);
+        Route::get('/employees', [SalesReportController::class, 'getSalesEmployees']);
+        Route::get('/employee/{employeeId}', [SalesReportController::class, 'getSalesDetail']);
+    });
 });

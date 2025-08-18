@@ -19,6 +19,7 @@ class Employee extends Model
         'phone',
         'address',
         'position',
+        'is_sales',
         'employment_type',
         'daily_salary',
         'monthly_salary',
@@ -39,6 +40,7 @@ class Employee extends Model
         'daily_meal_allowance' => 'decimal:2',
         'monthly_meal_allowance' => 'decimal:2',
         'bonus' => 'decimal:2',
+        'is_sales' => 'boolean',
     ];
 
     public function branch(): BelongsTo
@@ -54,6 +56,11 @@ class Employee extends Model
     public function savings(): HasMany
     {
         return $this->hasMany(EmployeeSavings::class);
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'sales_id');
     }
 
     public function activeLoan()
