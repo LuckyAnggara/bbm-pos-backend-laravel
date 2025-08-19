@@ -13,10 +13,11 @@ class LandingController extends Controller
      */
     public function index()
     {
+        // Static stats for demo (in production, these would come from database)
         $stats = [
-            'total_businesses' => Tenant::where('status', 'active')->count(),
-            'total_transactions' => 0, // This would need to be calculated from sales data
-            'uptime' => '99.9%', // This would come from monitoring
+            'total_businesses' => 150,
+            'total_transactions' => 50000,
+            'uptime' => '99.9%',
         ];
 
         return response()->json([
