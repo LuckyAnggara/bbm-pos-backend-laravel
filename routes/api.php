@@ -23,6 +23,10 @@ use App\Http\Controllers\Api\StockMutationReportController;
 use App\Http\Controllers\Api\StockMovementReportController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SalesReportController;
+use App\Http\Controllers\Api\TenantController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\SaasAdminController;
+use App\Http\Controllers\Api\SupportTicketController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,12 +39,47 @@ use App\Http\Controllers\Api\SalesReportController;
 |
 */
 
+// Public routes - Landing page and tenant registration
+Route::post('/tenant/register', [TenantController::class, 'register']);
+Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
 
+// Existing auth routes
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    // SaaS Management Routes
+    Route::prefix('tenant')->group(function () {
+        Route::get('/current', [TenantController::class, 'show']);
+        Route::put('/current', [TenantController::class, 'update']);
+        Route::get('/stats', [TenantController::class, 'stats']);
+    });
+
+    // Subscription Management Routes
+    Route::prefix('subscription')->group(function () {
+        Route::get('/current', [SubscriptionController::class, 'current']);
+        Route::post('/subscribe', [SubscriptionController::class, 'subscribe']);
+        Route::post('/cancel', [SubscriptionController::class, 'cancel']);
+    });
+
+    // Support Ticket Routes
+    Route::apiResource('support-tickets', SupportTicketController::class);
+    Route::post('/support-tickets/{ticket}/assign', [SupportTicketController::class, 'assign']);
+    Route::post('/support-tickets/{ticket}/close', [SupportTicketController::class, 'close']);
+    Route::get('/support/stats', [SupportTicketController::class, 'stats']);
+
+    // SaaS Admin Routes (Super Admin only)
+    Route::prefix('saas-admin')->group(function () {
+        Route::get('/dashboard', [SaasAdminController::class, 'dashboard']);
+        Route::get('/tenants', [SaasAdminController::class, 'tenants']);
+        Route::put('/tenants/{tenant}/status', [SaasAdminController::class, 'updateTenantStatus']);
+        Route::get('/analytics/subscriptions', [SaasAdminController::class, 'subscriptionAnalytics']);
+        Route::get('/support/overview', [SaasAdminController::class, 'supportOverview']);
+    });
+
+    // Existing routes with tenant awareness
+    Route::middleware(['tenant'])->group(function () {
     // Stock Opname routes
     Route::get('/stock-opname', [\App\Http\Controllers\StockOpnameController::class, 'index']);
     Route::post('/stock-opname', [\App\Http\Controllers\StockOpnameController::class, 'store']);
@@ -154,4 +193,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/employees', [SalesReportController::class, 'getSalesEmployees']);
         Route::get('/employee/{employeeId}', [SalesReportController::class, 'getSalesDetail']);
     });
-});
+    
+    }); // End tenant middleware group
+}); // End auth:sanctum group
