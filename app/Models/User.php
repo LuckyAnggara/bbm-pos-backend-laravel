@@ -91,4 +91,22 @@ class User extends Authenticatable
     {
         return $this->is_tenant_owner;
     }
+
+    /**
+     * Check if user has admin privileges.
+     */
+    public function isAdmin(): bool
+    {
+        return in_array($this->role, ['admin', 'super_admin']) || 
+               $this->isSuperAdmin() || 
+               $this->isTenantAdmin();
+    }
+
+    /**
+     * Check if user can access admin panel.
+     */
+    public function canAccessAdminPanel(): bool
+    {
+        return $this->isSuperAdmin() || $this->isTenantAdmin() || $this->role === 'admin';
+    }
 }
