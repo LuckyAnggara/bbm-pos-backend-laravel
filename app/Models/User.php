@@ -24,6 +24,9 @@ class User extends Authenticatable
         'password',
         'role',
         'branch_id',
+        'tenant_id',
+        'user_type',
+        'is_tenant_owner',
         'avatar_url',
         'local_printer_url',
     ];
@@ -46,7 +49,16 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_tenant_owner' => 'boolean',
     ];
+
+    /**
+     * Get the tenant that the user belongs to.
+     */
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     /**
      * Get the branch that the user belongs to.
@@ -54,5 +66,29 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Check if user is a super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->user_type === 'super_admin';
+    }
+
+    /**
+     * Check if user is a tenant admin.
+     */
+    public function isTenantAdmin(): bool
+    {
+        return $this->user_type === 'tenant_admin';
+    }
+
+    /**
+     * Check if user is a tenant owner.
+     */
+    public function isTenantOwner(): bool
+    {
+        return $this->is_tenant_owner;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Branch extends Model
 {
@@ -16,6 +17,7 @@ class Branch extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'tenant_id',
         'name',
         'invoice_name',
         'printer_port',
@@ -45,6 +47,14 @@ class Branch extends Model
     protected $casts = [
         'tax_rate' => 'double',
     ];
+
+    /**
+     * Get the tenant that owns the branch.
+     */
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     /**
      * Get the users for the branch.
