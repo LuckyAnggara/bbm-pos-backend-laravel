@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BankAccountController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerAnalyticsController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\PayrollController;
@@ -77,6 +78,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/{product}/mutations', [ProductController::class, 'mutations']);
 
     Route::apiResource('customers', CustomerController::class);
+    // Customer analytics routes
+    Route::get('/customers/{customer}/analytics', [CustomerAnalyticsController::class, 'analytics']);
+    Route::get('/customers/{customer}/sales', [CustomerAnalyticsController::class, 'sales']);
+    Route::get('/customers/top-customers', [CustomerAnalyticsController::class, 'topCustomers']);
+
     Route::apiResource('suppliers', SupplierController::class);
 
     // --- Rute untuk Transaksi POS ---

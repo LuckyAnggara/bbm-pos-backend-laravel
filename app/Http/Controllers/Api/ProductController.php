@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\StockMutation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -112,20 +113,20 @@ class ProductController extends Controller
 
             $transactions = collect();
 
-            // Get sales transactions
+            // Get sales transactions using SaleDetail model
             if (!$type || $type === 'sale' || $type === 'all') {
-                $sales = DB::table('sale_items')
-                    ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                $sales = DB::table('sale_details')
+                    ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
                     ->join('users', 'sales.user_id', '=', 'users.id')
-                    ->where('sale_items.product_id', $product->id)
+                    ->where('sale_details.product_id', $product->id)
                     ->select([
                         'sales.id as transaction_id',
-                        'sales.invoice_number as reference',
-                        'sale_items.quantity',
-                        'sale_items.unit_price as price',
-                        DB::raw('sale_items.quantity * sale_items.unit_price as total'),
+                        'sales.transaction_number as reference',
+                        'sale_details.quantity',
+                        'sale_details.price_at_sale as price',
+                        DB::raw('sale_details.quantity * sale_details.price_at_sale as total'),
                         'sales.created_at',
-                        'users.name as user_name',
+                        'sales.user_name',
                         DB::raw("'sale' as type"),
                         DB::raw("'Penjualan' as type_label")
                     ]);
@@ -140,18 +141,18 @@ class ProductController extends Controller
                 $transactions = $transactions->merge($sales->get());
             }
 
-            // Get purchase transactions
+            // Get purchase transactions using PurchaseOrderDetail model
             if (!$type || $type === 'purchase' || $type === 'all') {
-                $purchases = DB::table('purchase_order_items')
-                    ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+                $purchases = DB::table('purchase_order_details')
+                    ->join('purchase_orders', 'purchase_order_details.purchase_order_id', '=', 'purchase_orders.id')
                     ->join('users', 'purchase_orders.user_id', '=', 'users.id')
-                    ->where('purchase_order_items.product_id', $product->id)
+                    ->where('purchase_order_details.product_id', $product->id)
                     ->select([
                         'purchase_orders.id as transaction_id',
                         'purchase_orders.po_number as reference',
-                        'purchase_order_items.quantity',
-                        'purchase_order_items.unit_cost as price',
-                        DB::raw('purchase_order_items.quantity * purchase_order_items.unit_cost as total'),
+                        'purchase_order_details.ordered_quantity as quantity',
+                        'purchase_order_details.purchase_price as price',
+                        DB::raw('purchase_order_details.ordered_quantity * purchase_order_details.purchase_price as total'),
                         'purchase_orders.created_at',
                         'users.name as user_name',
                         DB::raw("'purchase' as type"),
@@ -203,15 +204,15 @@ class ProductController extends Controller
             $startDate = now()->subMonths($months);
 
             // Sales trend (monthly)
-            $salesTrend = DB::table('sale_items')
-                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-                ->where('sale_items.product_id', $product->id)
+            $salesTrend = DB::table('sale_details')
+                ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+                ->where('sale_details.product_id', $product->id)
                 ->whereDate('sales.created_at', '>=', $startDate)
                 ->select([
                     DB::raw('YEAR(sales.created_at) as year'),
                     DB::raw('MONTH(sales.created_at) as month'),
-                    DB::raw('SUM(sale_items.quantity) as quantity_sold'),
-                    DB::raw('SUM(sale_items.quantity * sale_items.unit_price) as revenue'),
+                    DB::raw('SUM(sale_details.quantity) as quantity_sold'),
+                    DB::raw('SUM(sale_details.quantity * sale_details.price_at_sale) as revenue'),
                     DB::raw('COUNT(DISTINCT sales.id) as transaction_count')
                 ])
                 ->groupBy(['year', 'month'])
@@ -220,32 +221,32 @@ class ProductController extends Controller
                 ->get();
 
             // Total statistics
-            $totalSales = DB::table('sale_items')
-                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-                ->where('sale_items.product_id', $product->id)
+            $totalSales = DB::table('sale_details')
+                ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+                ->where('sale_details.product_id', $product->id)
                 ->whereDate('sales.created_at', '>=', $startDate)
-                ->sum('sale_items.quantity');
+                ->sum('sale_details.quantity');
 
-            $totalRevenue = DB::table('sale_items')
-                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-                ->where('sale_items.product_id', $product->id)
+            $totalRevenue = DB::table('sale_details')
+                ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+                ->where('sale_details.product_id', $product->id)
                 ->whereDate('sales.created_at', '>=', $startDate)
-                ->sum(DB::raw('sale_items.quantity * sale_items.unit_price'));
+                ->sum(DB::raw('sale_details.quantity * sale_details.price_at_sale'));
 
-            $averagePrice = DB::table('sale_items')
-                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-                ->where('sale_items.product_id', $product->id)
+            $averagePrice = DB::table('sale_details')
+                ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+                ->where('sale_details.product_id', $product->id)
                 ->whereDate('sales.created_at', '>=', $startDate)
-                ->avg('sale_items.unit_price');
+                ->avg('sale_details.price_at_sale');
 
             // Best selling day
-            $bestDay = DB::table('sale_items')
-                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-                ->where('sale_items.product_id', $product->id)
+            $bestDay = DB::table('sale_details')
+                ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+                ->where('sale_details.product_id', $product->id)
                 ->whereDate('sales.created_at', '>=', $startDate)
                 ->select([
                     DB::raw('DATE(sales.created_at) as date'),
-                    DB::raw('SUM(sale_items.quantity) as quantity_sold')
+                    DB::raw('SUM(sale_details.quantity) as quantity_sold')
                 ])
                 ->groupBy('date')
                 ->orderByDesc('quantity_sold')
@@ -282,8 +283,7 @@ class ProductController extends Controller
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
-            $query = DB::table('stock_mutations')
-                ->where('product_id', $product->id);
+            $query = StockMutation::where('product_id', $product->id);
 
             if ($type && $type !== 'all') {
                 $query->where('type', $type);
