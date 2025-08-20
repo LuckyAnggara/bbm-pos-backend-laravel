@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             CustomerSeeder::class,
             ProductSeeder::class,    // Baru bisa dijalankan
+            AdminTestSeeder::class,  // Admin panel test data
         ]);
     }
 }

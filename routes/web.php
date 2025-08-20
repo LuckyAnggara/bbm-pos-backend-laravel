@@ -14,6 +14,18 @@ use App\Http\Controllers\LandingController;
 |
 */
 
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Admin test page
+Route::get('/admin-test', function () {
+    return view('admin-test');
+});
+
+// Include admin routes
+require __DIR__.'/admin.php';
+
 // Landing page routes
 // // Route::get('/', [LandingController::class, 'index']);
 // Route::get('/pricing', [LandingController::class, 'pricing']);
