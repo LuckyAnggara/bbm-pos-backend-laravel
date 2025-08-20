@@ -168,6 +168,30 @@ class TenantController extends Controller
     }
 
     /**
+     * Check tenant name availability.
+     */
+    public function checkAvailability(Request $request)
+    {
+        $validated = $request->validate([
+            'tenant_name' => 'required|string|max:255',
+        ]);
+
+        $name = trim($validated['tenant_name']);
+        $slug = Str::slug($name);
+
+        $exists = Tenant::where('slug', $slug)
+            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+
+        return response()->json([
+            'available' => !$exists,
+            'tenant_name' => $name,
+            'slug' => $slug,
+            'message' => $exists ? 'Tenant name is already taken.' : 'Tenant name is available.'
+        ]);
+    }
+
+    /**
      * Get tenant statistics.
      */
     public function stats(Request $request)

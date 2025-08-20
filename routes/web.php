@@ -15,7 +15,7 @@ use App\Http\Controllers\LandingController;
 */
 
 // Landing page routes
-Route::get('/', [LandingController::class, 'index']);
-Route::get('/pricing', [LandingController::class, 'pricing']);
-Route::get('/features', [LandingController::class, 'features']);
-Route::post('/contact', [LandingController::class, 'contact']);
+// // Route::get('/', [LandingController::class, 'index']);
+// Route::get('/pricing', [LandingController::class, 'pricing']);
+// Route::get('/features', [LandingController::class, 'features']);
+// Route::post('/contact', [LandingController::class, 'contact']);

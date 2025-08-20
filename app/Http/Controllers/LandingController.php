@@ -13,23 +13,23 @@ class LandingController extends Controller
      */
     public function index()
     {
-        // Static stats for demo (in production, these would come from database)
+        // Dynamic stats from database or cache (in production)
         $stats = [
-            'total_businesses' => 150,
-            'total_transactions' => 50000,
+            'total_businesses' => 500,
+            'total_transactions' => 1000000,
             'uptime' => '99.9%',
         ];
 
         return response()->json([
-            'message' => 'Welcome to BBM POS SaaS',
-            'tagline' => 'Complete Point of Sale Solution for Your Business',
+            'message' => 'Welcome to Mercato POS',
+            'tagline' => 'Satu platform, semua cabang terkendali.',
             'features' => [
-                'Multi-branch Support',
-                'Real-time Inventory Management',
-                'Comprehensive Reports',
-                'Employee Management',
-                'Customer Management',
-                'Financial Tracking'
+                'Advanced Point of Sale System',
+                'Multi-Branch Management', 
+                'Inventory Management',
+                'Financial Management',
+                'Customer & Supplier Management',
+                'Advanced Reporting & Analytics'
             ],
             'pricing_plans' => $this->getPricingPlans(),
             'stats' => $stats
@@ -112,61 +112,52 @@ class LandingController extends Controller
     {
         return [
             [
-                'name' => 'basic',
-                'display_name' => 'Basic',
-                'price' => 50000,
-                'price_yearly' => 500000,
-                'currency' => 'IDR',
-                'description' => 'Perfect for small businesses',
-                'max_branches' => 1,
-                'max_users' => 3,
+                'id' => 'paket-startup',
+                'name' => 'Paket Startup',
+                'subtitle' => 'Ideal untuk bisnis kecil',
+                'price' => 199000,
+                'price_period' => 'bulan',
                 'features' => [
-                    'Point of Sale',
-                    'Inventory Management',
-                    'Basic Reports',
-                    'Customer Management',
-                    'Email Support'
+                    '1 Lokasi/Cabang',
+                    '2 Kasir/User',
+                    'Fitur Kasir',
+                    'Laporan Penjualan',
+                    'Manajemen Stok',
+                    'Support via Chat'
                 ],
-                'popular' => false
+                'highlighted' => false
             ],
             [
-                'name' => 'premium',
-                'display_name' => 'Premium',
-                'price' => 150000,
-                'price_yearly' => 1500000,
-                'currency' => 'IDR',
-                'description' => 'Best for growing businesses',
-                'max_branches' => 3,
-                'max_users' => 10,
+                'id' => 'paket-growth',
+                'name' => 'Paket Growth',
+                'subtitle' => 'Terpopuler untuk bisnis berkembang',
+                'price' => 399000,
+                'price_period' => 'bulan',
                 'features' => [
-                    'Everything in Basic',
-                    'Multi-branch Support',
-                    'Employee Management',
-                    'Advanced Reports',
-                    'Stock Opname',
+                    '3 Lokasi/Cabang',
+                    'Unlimited Kasir/User',
+                    'Multi-Cabang Sync',
+                    'Analisis Penjualan',
+                    'Customer Management',
                     'Priority Support'
                 ],
-                'popular' => true
+                'highlighted' => true
             ],
             [
-                'name' => 'enterprise',
-                'display_name' => 'Enterprise',
-                'price' => 500000,
-                'price_yearly' => 5000000,
-                'currency' => 'IDR',
-                'description' => 'For large organizations',
-                'max_branches' => 'Unlimited',
-                'max_users' => 'Unlimited',
+                'id' => 'paket-pro',
+                'name' => 'Paket Pro',
+                'subtitle' => 'Untuk bisnis besar dan enterprise',
+                'price' => 799000,
+                'price_period' => 'bulan',
                 'features' => [
-                    'Everything in Premium',
-                    'Unlimited Branches',
-                    'Unlimited Users',
-                    'Custom Reports',
-                    'API Access',
-                    'Custom Domain',
-                    'Dedicated Support'
+                    'Unlimited Lokasi/Cabang',
+                    'Unlimited Kasir/User',
+                    'Advanced Analytics',
+                    'Custom Integrations',
+                    'Dedicated Support',
+                    'API Access'
                 ],
-                'popular' => false
+                'highlighted' => false
             ]
         ];
     }

@@ -20,6 +20,10 @@ return [
         'login',
         'logout',
         'register',
+        'tenant/check-availability',
+        'tenant/register',
+        'tenant/login',
+        'subscription/plans',
         'sanctum/csrf-cookie'
     ],
 

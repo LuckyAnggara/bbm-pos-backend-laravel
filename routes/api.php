@@ -40,7 +40,10 @@ use App\Http\Controllers\Api\SupportTicketController;
 */
 
 // Public routes - Landing page and tenant registration
+Route::get('/landing', [\App\Http\Controllers\LandingController::class, 'index']);
+Route::post('/landing/contact', [\App\Http\Controllers\LandingController::class, 'contact']);
 Route::post('/tenant/register', [TenantController::class, 'register']);
+Route::get('/tenant/check-availability', [TenantController::class, 'checkAvailability']);
 Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
 
 // Existing auth routes
