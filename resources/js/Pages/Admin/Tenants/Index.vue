@@ -28,7 +28,8 @@
               <option value="">All Statuses</option>
               <option value="active">Active</option>
               <option value="trial">Trial</option>
-              <option value="canceled">Canceled</option>
+              <option value="suspended">Suspended</option>
+              <option value="cancelled">Cancelled</option>
               <option value="past_due">Past Due</option>
             </select>
           </div>
@@ -98,7 +99,8 @@
                         :class="{
                           'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100': tenant.status === 'active',
                           'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100': tenant.status === 'trial',
-                          'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100': tenant.status === 'canceled',
+                          'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100': tenant.status === 'cancelled',
+                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100': tenant.status === 'suspended',
                           'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100': tenant.status === 'past_due'
                         }">
                     {{ tenant.status }}
@@ -198,7 +200,8 @@
                   <select v-model="form.status" id="status" class="input-primary">
                     <option value="active">Active</option>
                     <option value="trial">Trial</option>
-                    <option value="canceled">Canceled</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="cancelled">Cancelled</option>
                     <option value="past_due">Past Due</option>
                   </select>
                 </div>

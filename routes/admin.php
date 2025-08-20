@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SupportTicketController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,21 +38,20 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->name('admin.')->g
 
     // Users Management  
     Route::resource('users', UserController::class);
-    Route::post('/users/{user}/invite', [UserController::class, 'sendInvite'])->name('users.invite');
+    // Route::post('/users/{user}/invite', [UserController::class, 'sendInvite'])->name('users.invite');
     
     // Support Tickets
     Route::resource('support-tickets', SupportTicketController::class);
-    Route::post('/support-tickets/{ticket}/assign', [SupportTicketController::class, 'assign'])->name('support-tickets.assign');
-    Route::post('/support-tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support-tickets.reply');
+    Route::post('/support-tickets/{supportTicket}/assign', [SupportTicketController::class, 'assign'])->name('support-tickets.assign');
     
     // Landing Page CMS
-    Route::prefix('landing-page')->name('landing-page.')->group(function () {
-        Route::get('/', [LandingPageController::class, 'index'])->name('index');
-        Route::post('/', [LandingPageController::class, 'update'])->name('update');
-        Route::post('/media', [LandingPageController::class, 'uploadMedia'])->name('media.upload');
-    });
+    // Route::prefix('landing-page')->name('landing-page.')->group(function () {
+    //     Route::get('/', [LandingPageController::class, 'index'])->name('index');
+    //     Route::post('/', [LandingPageController::class, 'update'])->name('update');
+    //     Route::post('/media', [LandingPageController::class, 'uploadMedia'])->name('media.upload');
+    // });
 });
 
-// Public invitation acceptance routes
-Route::get('/invite/{token}', [UserController::class, 'showInvite'])->name('invite.show');
-Route::post('/invite/{token}', [UserController::class, 'acceptInvite'])->name('invite.accept');
+// Public invitation acceptance routes (commented out for now)
+// Route::get('/invite/{token}', [UserController::class, 'showInvite'])->name('invite.show');
+// Route::post('/invite/{token}', [UserController::class, 'acceptInvite'])->name('invite.accept');

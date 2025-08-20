@@ -18,6 +18,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Admin test page
+Route::get('/admin-test', function () {
+    return view('admin-test');
+});
+
 // Include admin routes
 require __DIR__.'/admin.php';
 

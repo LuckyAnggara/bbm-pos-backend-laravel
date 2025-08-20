@@ -43,7 +43,7 @@ class TenantController extends Controller
             'domain' => 'nullable|string|unique:tenants,domain',
             'contact_email' => 'required|email|unique:tenants,contact_email',
             'plan_name' => 'required|in:basic,pro,enterprise',
-            'status' => 'required|in:active,trial,canceled,past_due'
+            'status' => 'required|in:active,trial,suspended,cancelled,past_due'
         ]);
 
         $tenant = Tenant::create([
@@ -97,7 +97,7 @@ class TenantController extends Controller
             'domain' => ['nullable', 'string', Rule::unique('tenants')->ignore($tenant->id)],
             'contact_email' => ['required', 'email', Rule::unique('tenants')->ignore($tenant->id)],
             'plan_name' => 'required|in:basic,pro,enterprise',
-            'status' => 'required|in:active,trial,canceled,past_due'
+            'status' => 'required|in:active,trial,suspended,cancelled,past_due'
         ]);
 
         $tenant->update([
