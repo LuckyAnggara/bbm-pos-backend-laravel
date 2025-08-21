@@ -22,6 +22,7 @@ class ProductController extends Controller
             $limit = $request->input('limit', 15);
             $search = $request->input('search');
             $categoryId = $request->input('category_id');
+            $branchId = $request->input('branch_id');
             $query = Product::with(['category', 'branch']);
 
             if ($search) {
@@ -35,11 +36,15 @@ class ProductController extends Controller
                 $query->where('category_id', $categoryId);
             }
 
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+
             $products = $query->latest()->paginate($limit);
 
             return response()->json($products);
         } catch (\Exception $e) {
-            Log::error('Error fetching products: '.$e->getMessage());
+            Log::error('Error fetching products: ' . $e->getMessage());
 
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
@@ -73,7 +78,7 @@ class ProductController extends Controller
 
             return response()->json($product, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating product: '.$e->getMessage());
+            Log::error('Error creating product: ' . $e->getMessage());
 
             return response()->json(['message' => 'Failed to create product. Please try again.'], 500);
         }
@@ -98,7 +103,7 @@ class ProductController extends Controller
 
             return response()->json($product);
         } catch (\Exception $e) {
-            Log::error('Error fetching product details: '.$e->getMessage());
+            Log::error('Error fetching product details: ' . $e->getMessage());
 
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
@@ -190,7 +195,7 @@ class ProductController extends Controller
                 'last_page' => ceil($total / $limit),
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching product transactions: '.$e->getMessage());
+            Log::error('Error fetching product transactions: ' . $e->getMessage());
 
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
@@ -272,7 +277,7 @@ class ProductController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching product insights: '.$e->getMessage());
+            Log::error('Error fetching product insights: ' . $e->getMessage());
 
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
@@ -320,7 +325,7 @@ class ProductController extends Controller
 
             return response()->json($mutations);
         } catch (\Exception $e) {
-            Log::error('Error fetching product mutations: '.$e->getMessage());
+            Log::error('Error fetching product mutations: ' . $e->getMessage());
 
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
@@ -355,7 +360,7 @@ class ProductController extends Controller
 
             return response()->json($product);
         } catch (\Exception $e) {
-            Log::error("Error updating product {$product->id}: ".$e->getMessage());
+            Log::error("Error updating product {$product->id}: " . $e->getMessage());
 
             return response()->json(['message' => 'Failed to update product. Please try again.'], 500);
         }
@@ -374,7 +379,7 @@ class ProductController extends Controller
 
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting product {$product->id}: ".$e->getMessage());
+            Log::error("Error deleting product {$product->id}: " . $e->getMessage());
 
             return response()->json(['message' => 'Failed to delete product. Please try again.'], 500);
         }

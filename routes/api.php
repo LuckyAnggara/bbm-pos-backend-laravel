@@ -75,11 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/{product}/insights', [ProductController::class, 'insights']);
     Route::get('/products/{product}/mutations', [ProductController::class, 'mutations']);
 
-    Route::apiResource('customers', CustomerController::class);
-    // Customer analytics routes
+    // Customer analytics routes (HARUS SEBELUM apiResource untuk menghindari konflik routing)
+    Route::get('/customers/top-customers', [CustomerAnalyticsController::class, 'topCustomers']);
     Route::get('/customers/{customer}/analytics', [CustomerAnalyticsController::class, 'analytics']);
     Route::get('/customers/{customer}/sales', [CustomerAnalyticsController::class, 'sales']);
-    Route::get('/customers/top-customers', [CustomerAnalyticsController::class, 'topCustomers']);
+
+    Route::apiResource('customers', CustomerController::class);
 
     Route::apiResource('suppliers', SupplierController::class);
     Route::get('suppliers-stats', [SupplierController::class, 'stats']);

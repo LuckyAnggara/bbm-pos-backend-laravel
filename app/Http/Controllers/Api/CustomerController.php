@@ -50,12 +50,32 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|string|email|max:255|unique:customers,email',
-            'phone' => 'nullable|string|max:20|unique:customers,phone',
-            'address' => 'nullable|string',
+        // Validate branch_id first so uniqueness checks can rely on a validated value
+        $request->validate([
             'branch_id' => 'required|exists:branches,id',
+        ]);
+        $branchId = $request->input('branch_id');
+
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => [
+                'nullable',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('customers')->where(function ($query) use ($branchId) {
+                    return $query->where('branch_id', $branchId);
+                }),
+            ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('customers')->where(function ($query) use ($branchId) {
+                    return $query->where('branch_id', $branchId);
+                }),
+            ],
+            'address' => 'nullable|string',
             'notes' => 'nullable|string',
             // Customer Classification
             'customer_type' => 'nullable|in:individual,business',
@@ -70,7 +90,12 @@ class CustomerController extends Controller
             // Preferences
             'preferences' => 'nullable|array',
             'is_active' => 'nullable|boolean',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
+
+        // Ensure branch_id is present in the validated data
+        $validated['branch_id'] = $branchId;
 
         // Set defaults for new customers
         $validated['customer_type'] = $validated['customer_type'] ?? 'individual';
@@ -94,7 +119,7 @@ class CustomerController extends Controller
 
             return response()->json($customer->load('branch'), 201);
         } catch (\Exception $e) {
-            Log::error('Error creating customer: ' . $e->getMessage());
+            Log::error('Error creating customer: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return response()->json(['message' => 'Failed to create customer.'], 500);
         }

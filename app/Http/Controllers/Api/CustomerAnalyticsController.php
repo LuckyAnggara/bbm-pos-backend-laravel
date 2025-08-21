@@ -91,7 +91,7 @@ class CustomerAnalyticsController extends Controller
                 'top_products' => $topProducts,
             ]);
         } catch (\Exception $e) {
-            Log::error("Error getting customer analytics for {$customer->id}: ".$e->getMessage());
+            Log::error("Error getting customer analytics for {$customer->id}: " . $e->getMessage());
 
             return response()->json(['message' => 'Failed to get customer analytics.'], 500);
         }
@@ -124,7 +124,7 @@ class CustomerAnalyticsController extends Controller
 
             return response()->json($sales);
         } catch (\Exception $e) {
-            Log::error("Error getting customer sales for {$customer->id}: ".$e->getMessage());
+            Log::error("Error getting customer sales for {$customer->id}: " . $e->getMessage());
 
             return response()->json(['message' => 'Failed to get customer sales.'], 500);
         }
@@ -229,7 +229,7 @@ class CustomerAnalyticsController extends Controller
                 'highest_spending' => $highestSpending,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting top customers: '.$e->getMessage());
+            Log::error('Error getting top customers: ' . $e->getMessage());
 
             return response()->json(['message' => 'Failed to get top customers.'], 500);
         }

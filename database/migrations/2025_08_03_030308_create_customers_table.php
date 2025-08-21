@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->id(); // Primary key
             $table->string('name'); // Nama pelanggan
-            $table->string('email')->unique()->nullable(); // Email (opsional, unik)
-            $table->string('phone')->unique()->nullable(); // Nomor telepon (opsional, unik)
+            $table->string('email')->nullable(); // Email (opsional, unik)
+            $table->string('phone')->nullable(); // Nomor telepon (opsional, unik)
             $table->text('address')->nullable(); // Alamat (opsional)
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->text('notes')->nullable(); // Alamat (opsional)
