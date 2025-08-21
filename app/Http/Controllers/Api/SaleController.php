@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMutation;
-use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Carbon;
 
 class SaleController extends Controller
 {
@@ -36,9 +36,9 @@ class SaleController extends Controller
             if ($request->filled('payment_status_term')) {
                 if ($request->payment_status_term === 'all') {
                     $query->whereNotNull('is_credit_sale');
-                } else if ($request->payment_status_term === 'cash') {
+                } elseif ($request->payment_status_term === 'cash') {
                     $query->where('is_credit_sale', false);
-                } else if ($request->payment_status_term === 'credit') {
+                } elseif ($request->payment_status_term === 'credit') {
                     $query->where('is_credit_sale', true);
                 }
             }
@@ -97,7 +97,8 @@ class SaleController extends Controller
 
             return response()->json($sales);
         } catch (\Exception $e) {
-            Log::error('Error fetching sales: ' . $e->getMessage());
+            Log::error('Error fetching sales: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -114,10 +115,9 @@ class SaleController extends Controller
             'branch',
             // Load sale details, and for each detail, load the product info
             'saleDetails.product:id,name,sku',
-            'customerPayments'
+            'customerPayments',
         ]);
     }
-
 
     /**
      * Display a listing of request retur / delete Admin.
@@ -149,7 +149,6 @@ class SaleController extends Controller
                 }
             }
 
-
             // Search by transaction number or customer name
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -163,7 +162,8 @@ class SaleController extends Controller
 
             return response()->json($sales);
         } catch (\Exception $e) {
-            Log::error('Error fetching sales: ' . $e->getMessage());
+            Log::error('Error fetching sales: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -197,7 +197,6 @@ class SaleController extends Controller
         return response()->json($sale);
     }
 
-
     // Metode untuk admin MENYETUJUI permintaan
     public function approveAction(Sale $sale)
     {
@@ -206,7 +205,7 @@ class SaleController extends Controller
             return response()->json(['message' => 'Hanya admin yang dapat menyetujui aksi ini.'], 403);
         }
 
-        if (!in_array($sale->status, ['pending_return', 'pending_void'])) {
+        if (! in_array($sale->status, ['pending_return', 'pending_void'])) {
             return response()->json(['message' => 'Tidak ada permintaan yang menunggu persetujuan untuk transaksi ini.'], 422);
         }
 
@@ -250,10 +249,9 @@ class SaleController extends Controller
 
             return response()->json($sale->fresh());
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal memproses persetujuan: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Gagal memproses persetujuan: '.$e->getMessage()], 500);
         }
     }
-
 
     // Metode untuk admin MENOLAK permintaan
     public function rejectAction(Sale $sale)
@@ -263,7 +261,7 @@ class SaleController extends Controller
             return response()->json(['message' => 'Hanya admin yang dapat menolak aksi ini.'], 403);
         }
 
-        if (!in_array($sale->status, ['pending_return', 'pending_void'])) {
+        if (! in_array($sale->status, ['pending_return', 'pending_void'])) {
             return response()->json(['message' => 'Tidak ada permintaan yang menunggu penolakan untuk transaksi ini.'], 422);
         }
 
@@ -282,7 +280,7 @@ class SaleController extends Controller
 
             return response()->json($sale->fresh());
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal memproses penolakan: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Gagal memproses penolakan: '.$e->getMessage()], 500);
         }
     }
 
@@ -298,10 +296,10 @@ class SaleController extends Controller
                 'category' => $category,
                 'link_url' => $link,
                 'created_by' => auth()->id(),
-                'created_by_name' => auth()->user()->name ?? 'System'
+                'created_by_name' => auth()->user()->name ?? 'System',
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed creating admin notification: ' . $e->getMessage());
+            Log::error('Failed creating admin notification: '.$e->getMessage());
         }
     }
 }

@@ -1,29 +1,29 @@
 <?php
 
-use App\Http\Controllers\Api\UserController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BankAccountController;
+use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerPaymentController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseOrderController;
 use App\Http\Controllers\Api\SaleController;
-use App\Http\Controllers\Api\CustomerPaymentController;
-use App\Http\Controllers\Api\ShiftController;
-use App\Http\Controllers\Api\SupplierController;
-use App\Http\Controllers\Api\SupplierPaymentController;
-use App\Http\Controllers\Api\FinancialReportController;
-use App\Http\Controllers\Api\StockMutationReportController;
-use App\Http\Controllers\Api\StockMovementReportController;
-use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SalesReportController;
+use App\Http\Controllers\Api\ShiftController;
+use App\Http\Controllers\Api\StockMovementReportController;
+use App\Http\Controllers\Api\StockMutationReportController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\Api\SupplierPaymentController;
+use App\Http\Controllers\Api\UserController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,10 +36,8 @@ use App\Http\Controllers\Api\SalesReportController;
 |
 */
 
-
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
-
 
 Route::middleware('auth:sanctum')->group(function () {
     // Stock Opname routes
@@ -84,6 +82,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/top-customers', [CustomerAnalyticsController::class, 'topCustomers']);
 
     Route::apiResource('suppliers', SupplierController::class);
+    Route::get('suppliers-stats', [SupplierController::class, 'stats']);
+    Route::get('suppliers/top-suppliers', [SupplierController::class, 'topSuppliers']);
 
     // --- Rute untuk Transaksi POS ---
     Route::post('/pos/transactions', [PosController::class, 'store']);

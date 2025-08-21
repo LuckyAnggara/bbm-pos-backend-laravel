@@ -109,7 +109,9 @@ class StockMutationReportService
         }
 
         $product = Product::select('quantity')->find($productId);
-        if (!$product) return 0;
+        if (! $product) {
+            return 0;
+        }
 
         $netSinceDate = (int) StockMutation::where('branch_id', $branchId)
             ->where('product_id', $productId)

@@ -24,7 +24,6 @@ class BranchController extends Controller
     public function store(Request $request)
     {
 
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'invoice_name' => 'required|string|max:255',
@@ -42,9 +41,11 @@ class BranchController extends Controller
             $branch = DB::transaction(function () use ($validated) {
                 return Branch::create($validated);
             });
+
             return response()->json($branch, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating branch: ' . $e->getMessage());
+            Log::error('Error creating branch: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create branch. Please try again.'], 500);
         }
     }
@@ -76,14 +77,15 @@ class BranchController extends Controller
             'phone_number' => 'nullable|string|max:50',
         ]);
 
-
         try {
             DB::transaction(function () use ($branch, $validated) {
                 $branch->update($validated);
             });
+
             return response()->json($branch);
         } catch (\Exception $e) {
-            Log::error("Error updating branch {$branch->id}: " . $e->getMessage());
+            Log::error("Error updating branch {$branch->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update branch. Please try again.'], 500);
         }
     }

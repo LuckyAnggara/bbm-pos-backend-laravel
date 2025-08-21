@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
@@ -84,6 +83,7 @@ class EmployeeController extends Controller
     public function show(Employee $employee): JsonResponse
     {
         $employee->load('branch');
+
         return response()->json($employee);
     }
 
@@ -113,6 +113,7 @@ class EmployeeController extends Controller
     public function destroy(Employee $employee): JsonResponse
     {
         $employee->delete();
+
         return response()->json(['message' => 'Employee deleted successfully']);
     }
 }

@@ -18,17 +18,19 @@ class StockOpnameItem extends Model
         'system_quantity',
         'counted_quantity',
         'difference',
-        'notes'
+        'notes',
     ];
 
     public function session(): BelongsTo
     {
         return $this->belongsTo(StockOpnameSession::class, 'session_id');
     }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);

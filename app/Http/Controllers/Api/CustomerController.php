@@ -26,7 +26,6 @@ class CustomerController extends Controller
 
             $query->where('branch_id', $request->branch_id);
 
-
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
@@ -40,7 +39,8 @@ class CustomerController extends Controller
 
             return response()->json($customers);
         } catch (\Exception $e) {
-            Log::error('Error fetching customers: ' . $e->getMessage());
+            Log::error('Error fetching customers: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -63,9 +63,11 @@ class CustomerController extends Controller
             $customer = DB::transaction(function () use ($validated) {
                 return Customer::create($validated);
             });
+
             return response()->json($customer, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating customer: ' . $e->getMessage());
+            Log::error('Error creating customer: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create customer.'], 500);
         }
     }
@@ -97,9 +99,11 @@ class CustomerController extends Controller
             DB::transaction(function () use ($customer, $validated) {
                 $customer->update($validated);
             });
+
             return response()->json($customer);
         } catch (\Exception $e) {
-            Log::error("Error updating customer {$customer->id}: " . $e->getMessage());
+            Log::error("Error updating customer {$customer->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update customer.'], 500);
         }
     }
@@ -113,9 +117,11 @@ class CustomerController extends Controller
             DB::transaction(function () use ($customer) {
                 $customer->delete();
             });
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting customer {$customer->id}: " . $e->getMessage());
+            Log::error("Error deleting customer {$customer->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete customer.'], 500);
         }
     }

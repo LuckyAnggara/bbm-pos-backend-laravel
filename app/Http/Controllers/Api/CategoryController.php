@@ -30,7 +30,8 @@ class CategoryController extends Controller
 
             return response()->json($categories);
         } catch (\Exception $e) {
-            Log::error('Error fetching categories: ' . $e->getMessage());
+            Log::error('Error fetching categories: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -50,9 +51,11 @@ class CategoryController extends Controller
             $category = DB::transaction(function () use ($validated) {
                 return Category::create($validated);
             });
+
             return response()->json($category, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating category: ' . $e->getMessage());
+            Log::error('Error creating category: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create category. Please try again.'], 500);
         }
     }
@@ -81,9 +84,11 @@ class CategoryController extends Controller
             DB::transaction(function () use ($category, $validated) {
                 $category->update($validated);
             });
+
             return response()->json($category);
         } catch (\Exception $e) {
-            Log::error("Error updating category {$category->id}: " . $e->getMessage());
+            Log::error("Error updating category {$category->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update category. Please try again.'], 500);
         }
     }
@@ -97,9 +102,11 @@ class CategoryController extends Controller
             DB::transaction(function () use ($category) {
                 $category->delete();
             });
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting category {$category->id}: " . $e->getMessage());
+            Log::error("Error deleting category {$category->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete category. Please try again.'], 500);
         }
     }

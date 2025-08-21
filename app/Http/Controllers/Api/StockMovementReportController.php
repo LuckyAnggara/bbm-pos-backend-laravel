@@ -26,7 +26,7 @@ class StockMovementReportController extends Controller
             ->where('end_date', $validated['end_date'])
             ->first();
 
-        if (!$report) {
+        if (! $report) {
             return response()->json(['message' => 'Not Found'], 404);
         }
 

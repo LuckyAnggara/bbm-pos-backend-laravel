@@ -28,7 +28,7 @@ class ProductFactory extends Factory
 
         return [
             'name' => $this->faker->unique()->words(3, true), // Contoh: 'Enim Quis Animi'
-            'sku' => 'SKU-' . $this->faker->unique()->randomNumber(6),
+            'sku' => 'SKU-'.$this->faker->unique()->randomNumber(6),
             'quantity' => $this->faker->numberBetween(10, 250),
             'cost_price' => $costPrice,
             'price' => round($price / 500) * 500, // Bulatkan harga jual ke 500 perak terdekat

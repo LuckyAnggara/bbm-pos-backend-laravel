@@ -13,7 +13,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         try {
-            $limit = (int)$request->input('limit', 50);
+            $limit = (int) $request->input('limit', 50);
             $user = $request->user();
             $scope = $request->input('scope'); // 'sent' to view those created by current user
             $query = Notification::query();
@@ -36,9 +36,11 @@ class NotificationController extends Controller
             }
 
             $query->latest();
+
             return response()->json($query->paginate($limit));
         } catch (\Exception $e) {
-            Log::error('Notification index error: ' . $e->getMessage());
+            Log::error('Notification index error: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -52,7 +54,7 @@ class NotificationController extends Controller
                 'message' => 'required|string|max:2000',
                 'category' => 'required|string|max:100',
                 'link_url' => 'nullable|url|max:500',
-                'branch_id' => 'nullable|integer' // null = all branches
+                'branch_id' => 'nullable|integer', // null = all branches
             ]);
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
@@ -69,12 +71,13 @@ class NotificationController extends Controller
                 'is_read' => false,
                 'is_dismissed' => false,
                 'created_by' => $user->id,
-                'created_by_name' => $user->name ?? 'System'
+                'created_by_name' => $user->name ?? 'System',
             ]);
 
             return response()->json(['success' => true, 'data' => $notification], 201);
         } catch (\Exception $e) {
-            Log::error('Notification store error: ' . $e->getMessage());
+            Log::error('Notification store error: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -86,6 +89,7 @@ class NotificationController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
         $notification->update(['is_read' => true, 'read_at' => now()]);
+
         return response()->json(['success' => true]);
     }
 
@@ -95,6 +99,7 @@ class NotificationController extends Controller
         Notification::where(function ($q) use ($user) {
             $q->whereNull('user_id')->orWhere('user_id', $user->id);
         })->where('is_dismissed', false)->update(['is_read' => true, 'read_at' => now()]);
+
         return response()->json(['success' => true]);
     }
 
@@ -105,6 +110,7 @@ class NotificationController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
         $notification->update(['is_dismissed' => true, 'dismissed_at' => now()]);
+
         return response()->json(['success' => true]);
     }
 }

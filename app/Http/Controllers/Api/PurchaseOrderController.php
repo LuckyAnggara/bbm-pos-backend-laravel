@@ -8,11 +8,10 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\StockMutation;
 use App\Models\Supplier;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class PurchaseOrderController extends Controller
 {
@@ -55,9 +54,11 @@ class PurchaseOrderController extends Controller
             }
 
             $purchaseOrders = $query->latest()->paginate($limit);
+
             return response()->json($purchaseOrders);
         } catch (\Exception $e) {
             Log::error('Error fetching purchase orders: ' . $e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -70,48 +71,81 @@ class PurchaseOrderController extends Controller
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'branch_id' => 'required|exists:branches,id',
-            'order_date' => 'required|date',
+            'order_date' => 'required',
+            'expected_delivery_date' => 'nullable',
+            'payment_due_date' => 'nullable',
             'notes' => 'nullable|string',
-            'is_credit_purchase' => 'sometimes|boolean',
-            'payment_terms' => 'nullable|string',
-            'expected_delivery_date' => 'nullable|date',
-            'payment_due_date' => 'nullable|date',
+            'is_credit' => 'sometimes|boolean',
+            'payment_terms' => 'nullable|string|in:cash,credit',
+            'supplier_invoice_number' => 'nullable|string|max:255',
+            'tax_discount_amount' => 'nullable|numeric|min:0',
+            'tax_amount' => 'nullable|numeric|min:0',
+            'shipping_cost_charged' => 'nullable|numeric|min:0',
+            'other_costs' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
-            // Sesuaikan dengan nama kolom di frontend/request
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.cost' => 'required|numeric|min:0',
+            'status' => 'nullable|string',
         ]);
 
         try {
-            $po = DB::transaction(function () use ($validated) {
+            $po = DB::transaction(function () use ($validated, $request) {
                 $supplier = Supplier::findOrFail($validated['supplier_id']);
-                $subtotal = 0;
 
+                $parseDate = function ($value) {
+                    if (! $value) {
+                        return null;
+                    }
+                    if (is_string($value) && strlen($value) === 10) {
+                        return Carbon::createFromFormat('Y-m-d', $value, config('app.timezone'))->startOfDay();
+                    }
+                    try {
+                        return Carbon::parse($value, config('app.timezone'))->startOfDay();
+                    } catch (\Exception $e) {
+                        return null;
+                    }
+                };
+
+                $subtotal = 0;
                 foreach ($validated['items'] as $item) {
                     $subtotal += $item['cost'] * $item['quantity'];
                 }
 
-                $totalAmount = $subtotal; // Tambahkan logika tax/shipping jika perlu
+                $discount = (float) ($validated['tax_discount_amount'] ?? 0);
+                $shipping = (float) ($validated['shipping_cost_charged'] ?? 0);
+                $tax = (float) ($validated['tax_amount'] ?? 0);
+                $other = (float) ($validated['other_costs'] ?? 0);
 
-                $isCredit = (bool)($validated['is_credit_purchase'] ?? false);
-                $paymentDueDate = $validated['payment_due_date'] ?? null;
-                $expectedDate = $validated['expected_delivery_date'] ?? null;
+                $discount = max(0, $discount);
+                $shipping = max(0, $shipping);
+                $tax = max(0, $tax);
+                $other = max(0, $other);
+
+                $taxableBase = max(0, $subtotal - $discount);
+                $totalAmount = $taxableBase + $shipping + $tax + $other;
+
+                $isCredit = (bool) ($validated['is_credit'] ?? ($validated['payment_terms'] ?? '') === 'credit');
 
                 $purchaseOrder = PurchaseOrder::create([
                     'po_number' => 'PO-' . time(),
                     'branch_id' => $validated['branch_id'],
                     'supplier_id' => $supplier->id,
                     'supplier_name' => $supplier->name,
-                    'order_date' => Carbon::parse($validated['order_date']),
+                    'supplier_invoice_number' => $validated['supplier_invoice_number'] ?? null,
+                    'order_date' => $parseDate($validated['order_date']),
                     'user_id' => auth()->id(),
-                    'status' => 'pending',
-                    'is_credit_purchase' => $isCredit,
-                    'payment_terms' => $validated['payment_terms'] ?? null,
-                    'expected_delivery_date' => $expectedDate ? Carbon::parse($expectedDate) : null,
-                    'payment_due_date' => $paymentDueDate ? Carbon::parse($paymentDueDate) : null,
+                    'status' => $request->input('status', 'pending'),
+                    'is_credit' => $isCredit,
+                    'payment_terms' => $validated['payment_terms'] ?? ($isCredit ? 'credit' : 'cash'),
+                    'expected_delivery_date' => $parseDate($validated['expected_delivery_date'] ?? null),
+                    'payment_due_date' => $isCredit ? $parseDate($validated['payment_due_date'] ?? null) : null,
                     'payment_status' => $isCredit ? 'unpaid' : 'paid',
                     'subtotal' => $subtotal,
+                    'tax_discount_amount' => $discount,
+                    'tax_amount' => $tax,
+                    'shipping_cost_charged' => $shipping,
+                    'other_costs' => $other,
                     'total_amount' => $totalAmount,
                     'outstanding_amount' => $isCredit ? $totalAmount : 0,
                     'notes' => $validated['notes'] ?? null,
@@ -119,15 +153,14 @@ class PurchaseOrderController extends Controller
 
                 foreach ($validated['items'] as $item) {
                     $product = Product::find($item['product_id']);
-                    // Koreksi di sini: Gunakan nama kolom dari migrasi purchase_order_details
                     PurchaseOrderDetail::create([
                         'purchase_order_id' => $purchaseOrder->id,
                         'branch_id' => $validated['branch_id'],
                         'product_id' => $item['product_id'],
-                        'product_name' => $product->name, // Ambil nama produk
-                        'ordered_quantity' => $item['quantity'], // Diubah dari 'quantity'
-                        'purchase_price' => $item['cost'],         // Diubah dari 'cost'
-                        'total_price' => $item['cost'] * $item['quantity'], // Diubah dari 'subtotal'
+                        'product_name' => $product?->name,
+                        'ordered_quantity' => $item['quantity'],
+                        'purchase_price' => $item['cost'],
+                        'total_price' => $item['cost'] * $item['quantity'],
                     ]);
                 }
 
@@ -137,6 +170,7 @@ class PurchaseOrderController extends Controller
             return response()->json($po->load('purchaseOrderDetails'), 201);
         } catch (\Exception $e) {
             Log::error('Error creating purchase order: ' . $e->getMessage());
+
             return response()->json(['message' => 'Failed to create Purchase Order.'], 500);
         }
     }
@@ -197,7 +231,6 @@ class PurchaseOrderController extends Controller
     //     }
     // }
 
-
     /**
      * Cancel a pending purchase order.
      */
@@ -209,9 +242,11 @@ class PurchaseOrderController extends Controller
 
         try {
             $purchaseOrder->delete(); // Menggunakan cascade delete dari migrasi
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
             Log::error("Error canceling PO {$purchaseOrder->id}: " . $e->getMessage());
+
             return response()->json(['message' => 'Failed to cancel order.'], 500);
         }
     }
@@ -223,7 +258,7 @@ class PurchaseOrderController extends Controller
     public function receiveOrder(Request $request, PurchaseOrder $purchaseOrder)
     {
         // Validasi: Pastikan PO bisa diterima & data item yang masuk valid
-        if (!in_array($purchaseOrder->status, ['ordered', 'pending', 'partially_received'])) {
+        if (! in_array($purchaseOrder->status, ['ordered', 'pending', 'partially_received'])) {
             return response()->json(['message' => 'Hanya PO dengan status "ordered", "pending" atau "partially received" yang bisa diterima.'], 422);
         }
 
@@ -287,10 +322,10 @@ class PurchaseOrderController extends Controller
             return response()->json(['message' => 'Barang berhasil diterima dan stok telah diperbarui.']);
         } catch (\Exception $e) {
             Log::error("Error receiving PO {$purchaseOrder->id}: " . $e->getMessage());
+
             return response()->json(['message' => 'Gagal menerima barang: ' . $e->getMessage()], 500);
         }
     }
-
 
     /**
      * [BARU] Mengubah status PO, misal dari 'draft' ke 'pending' (ordered).

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollDetail;
-use App\Models\Employee;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
@@ -36,7 +36,7 @@ class PayrollController extends Controller
             ->orderBy('payment_date', 'desc');
 
         if ($paymentType) {
-            if ($paymentType === "all") {
+            if ($paymentType === 'all') {
                 // If payment type is "all", we don't need to filter by payment type
             } else {
                 $query->where('payment_type', $paymentType);
@@ -132,7 +132,7 @@ class PayrollController extends Controller
             foreach ($employeeDetails as $detail) {
                 PayrollDetail::create([
                     'payroll_id' => $payroll->id,
-                    ...$detail
+                    ...$detail,
                 ]);
             }
 
@@ -159,13 +159,14 @@ class PayrollController extends Controller
 
             return response()->json([
                 'message' => 'Payroll created successfully',
-                'data' => $payroll
+                'data' => $payroll,
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Failed to create payroll',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -176,7 +177,7 @@ class PayrollController extends Controller
             ->findOrFail($id);
 
         return response()->json([
-            'data' => $payroll
+            'data' => $payroll,
         ]);
     }
 
@@ -201,14 +202,14 @@ class PayrollController extends Controller
             'period_start',
             'period_end',
             'notes',
-            'status'
+            'status',
         ]));
 
         $payroll->load(['branch', 'details.employee']);
 
         return response()->json([
             'message' => 'Payroll updated successfully',
-            'data' => $payroll
+            'data' => $payroll,
         ]);
     }
 
@@ -218,14 +219,14 @@ class PayrollController extends Controller
 
         if ($payroll->status === 'paid') {
             return response()->json([
-                'message' => 'Cannot delete paid payroll'
+                'message' => 'Cannot delete paid payroll',
             ], 422);
         }
 
         $payroll->delete();
 
         return response()->json([
-            'message' => 'Payroll deleted successfully'
+            'message' => 'Payroll deleted successfully',
         ]);
     }
 
@@ -259,7 +260,7 @@ class PayrollController extends Controller
             });
 
         return response()->json([
-            'data' => $employees
+            'data' => $employees,
         ]);
     }
 
@@ -312,7 +313,7 @@ class PayrollController extends Controller
                 'sisa_pinjaman' => $sisaPinjaman,
                 'total_tabungan' => $totalTabungan,
                 'total_diterima' => $totalGaji + $totalUangMakan + $totalBonus - $totalPotongan,
-            ]
+            ],
         ]);
     }
 

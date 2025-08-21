@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sale;
-use App\Models\SaleDetail;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'end_date' => 'nullable|date',
         ]);
 
-        $branchId = (int)$validated['branch_id'];
+        $branchId = (int) $validated['branch_id'];
         $start = $validated['start_date'] ? Carbon::parse($validated['start_date'])->startOfDay() : Carbon::now()->startOfMonth();
         $end = $validated['end_date'] ? Carbon::parse($validated['end_date'])->endOfDay() : Carbon::now()->endOfMonth();
 
@@ -42,7 +42,7 @@ class DashboardController extends Controller
         $netRevenue = $grossBeforeReturns - $returnedTotal; // simplistic net
 
         // Profit (sum of (total_amount - total_cogs) for completed minus returned impact)
-        $grossProfit = $completed->sum(fn($s) => ($s->total_amount - $s->total_cogs)) - $returned->sum(fn($s) => ($s->total_amount - $s->total_cogs));
+        $grossProfit = $completed->sum(fn ($s) => ($s->total_amount - $s->total_cogs)) - $returned->sum(fn ($s) => ($s->total_amount - $s->total_cogs));
 
         // Expenses in range
         $expenses = Expense::where('branch_id', $branchId)
@@ -65,7 +65,9 @@ class DashboardController extends Controller
 
         foreach ($sales as $s) {
             $d = Carbon::parse($s->created_at)->toDateString();
-            if (!isset($periodDays[$d])) continue;
+            if (! isset($periodDays[$d])) {
+                continue;
+            }
             $mult = $s->status === 'returned' ? -1 : ($s->status === 'completed' ? 1 : 0);
             if ($mult !== 0) {
                 $periodDays[$d]['sales'] += $mult * $s->total_amount;
@@ -73,12 +75,12 @@ class DashboardController extends Controller
             }
         }
 
-        $dailySales = array_values(array_map(fn($row) => [
+        $dailySales = array_values(array_map(fn ($row) => [
             'date' => $row['date'],
             'total' => $row['sales'],
         ], $periodDays));
 
-        $dailyProfit = array_values(array_map(fn($row) => [
+        $dailyProfit = array_values(array_map(fn ($row) => [
             'date' => $row['date'],
             'profit' => $row['profit'],
         ], $periodDays));

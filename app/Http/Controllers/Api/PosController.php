@@ -44,7 +44,7 @@ class PosController extends Controller
         $user = auth()->user();
         $branchId = $user->branch_id;
 
-        if (!$branchId) {
+        if (! $branchId) {
             return response()->json(['message' => 'User does not belong to any branch.'], 422);
         }
 
@@ -79,8 +79,8 @@ class PosController extends Controller
             $totalAmount = ($subtotal - $totalItemDiscount) + $taxAmount + $shippingCost;
 
             // Tentukan status pembayaran & outstanding untuk kredit
-            $isCredit = (bool)($validated['is_credit_sale'] ?? false);
-            $amountPaid = (float)($validated['amount_paid'] ?? 0);
+            $isCredit = (bool) ($validated['is_credit_sale'] ?? false);
+            $amountPaid = (float) ($validated['amount_paid'] ?? 0);
             $outstanding = $isCredit ? max(0, $totalAmount - $amountPaid) : 0;
             $paymentStatus = $isCredit
                 ? ($outstanding <= 0 ? 'paid' : ($amountPaid > 0 ? 'partially_paid' : 'unpaid'))
@@ -88,7 +88,7 @@ class PosController extends Controller
 
             // 2. Buat record Sale (header transaksi)
             $sale = Sale::create([
-                'transaction_number' => 'TRX-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+                'transaction_number' => 'TRX-'.date('Ymd').'-'.strtoupper(Str::random(6)),
                 'status' => 'completed',
                 'user_id' => $user->id, // Diambil dari backend
                 'branch_id' => $branchId, // Diambil dari backend
@@ -113,25 +113,24 @@ class PosController extends Controller
                 'outstanding_amount' => $outstanding,
             ]);
 
-
             // 3. Buat record SaleDetail untuk setiap item & kurangi stok
             foreach ($validated['items'] as $itemData) {
                 $product = Product::find($itemData['product_id']);
                 $itemSubtotal = $product->price * $itemData['quantity'];
 
                 $saleDetail = SaleDetail::create([
-                    'sale_id'       => $sale->id,
-                    'branch_id'     => $branchId, // Diambil dari user yang login
-                    'product_id'    => $product->id,
-                    'product_name'  => $product->name, // Simpan nama produk saat ini
-                    'branch_name'   => $sale->branch->name, // Simpan nama cabang saat ini
-                    'sku'           => $product->sku ?? '-',
-                    'quantity'      => $itemData['quantity'],
+                    'sale_id' => $sale->id,
+                    'branch_id' => $branchId, // Diambil dari user yang login
+                    'product_id' => $product->id,
+                    'product_name' => $product->name, // Simpan nama produk saat ini
+                    'branch_name' => $sale->branch->name, // Simpan nama cabang saat ini
+                    'sku' => $product->sku ?? '-',
+                    'quantity' => $itemData['quantity'],
                     'price_at_sale' => $product->price, // Simpan harga jual saat transaksi
-                    'cost_at_sale'  => $product->cost_price, // Simpan harga beli saat transaksi
+                    'cost_at_sale' => $product->cost_price, // Simpan harga beli saat transaksi
                     'discount_amount' => $itemData['discount_amount'] ?? 0,
-                    'subtotal'      => $itemSubtotal,
-                    'category_id'   => $product->category_id,
+                    'subtotal' => $itemSubtotal,
+                    'category_id' => $product->category_id,
                 ]);
 
                 $stockBefore = $product->quantity;
@@ -142,18 +141,18 @@ class PosController extends Controller
 
                 // Catat mutasi stok
                 StockMutation::create([
-                    'branch_id'       => $branchId,
-                    'product_id'      => $product->id,
-                    'product_name'    => $product->name,
+                    'branch_id' => $branchId,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
                     'quantity_change' => $quantityChange,
-                    'stock_before'    => $stockBefore,
-                    'stock_after'     => $product->fresh()->quantity, // Ambil stok terbaru
-                    'type'            => 'sale',
-                    'description'     => "Penjualan via POS #{$sale->transaction_number}",
-                    'reference_type'  => Sale::class,
-                    'reference_id'    => $sale->id,
-                    'user_id'         => $user->id,
-                    'user_name'       => $user->name,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $product->fresh()->quantity, // Ambil stok terbaru
+                    'type' => 'sale',
+                    'description' => "Penjualan via POS #{$sale->transaction_number}",
+                    'reference_type' => Sale::class,
+                    'reference_id' => $sale->id,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
                 ]);
             }
 
@@ -162,9 +161,10 @@ class PosController extends Controller
             return response()->json($sale->load('saleDetails'), 201);
         } catch (Throwable $e) {
             DB::rollBack();
-            Log::error("POS Transaction Error: " . $e->getMessage());
+            Log::error('POS Transaction Error: '.$e->getMessage());
             Log::error($e->getTraceAsString()); // Untuk debug lebih detail
-            return response()->json(['message' => 'Transaction Failed: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Transaction Failed: '.$e->getMessage()], 500);
         }
     }
 }

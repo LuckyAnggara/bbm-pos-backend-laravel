@@ -62,12 +62,14 @@ class BankAccountController extends Controller
                         ->where('is_default', true)
                         ->update(['is_default' => false]);
                 }
+
                 return BankAccount::create($validated);
             });
 
             return response()->json($bankAccount, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating bank account: ' . $e->getMessage());
+            Log::error('Error creating bank account: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create bank account.'], 500);
         }
     }
@@ -112,7 +114,8 @@ class BankAccountController extends Controller
 
             return response()->json($bankAccount);
         } catch (\Exception $e) {
-            Log::error("Error updating bank account {$bankAccount->id}: " . $e->getMessage());
+            Log::error("Error updating bank account {$bankAccount->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update bank account.'], 500);
         }
     }
@@ -129,7 +132,8 @@ class BankAccountController extends Controller
 
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting bank account {$bankAccount->id}: " . $e->getMessage());
+            Log::error("Error deleting bank account {$bankAccount->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete bank account.'], 500);
         }
     }

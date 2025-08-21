@@ -3,14 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\StockMutation;
 use App\Models\StockMutationReport;
 use App\Services\StockMutationReportService;
-use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class StockMutationReportController extends Controller
 {
@@ -30,7 +26,7 @@ class StockMutationReportController extends Controller
             ->where('end_date', $validated['end_date'])
             ->first();
 
-        if (!$report) {
+        if (! $report) {
             return response()->json(['message' => 'Not Found'], 404);
         }
 
@@ -54,6 +50,7 @@ class StockMutationReportController extends Controller
         $endDate = CarbonImmutable::now()->endOfDay();
 
         $result = $service->compute($branchId, $startDate, $endDate, false);
+
         return response()->json([
             'branch_id' => $branchId,
             'start_date' => $startDate->toDateString(),

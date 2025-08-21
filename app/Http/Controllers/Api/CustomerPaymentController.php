@@ -20,6 +20,7 @@ class CustomerPaymentController extends Controller
         if ($saleId) {
             $query->where('sale_id', $saleId);
         }
+
         return $query->latest('payment_date')->paginate($request->input('limit', 50));
     }
 
@@ -43,7 +44,7 @@ class CustomerPaymentController extends Controller
 
             if ($validated['amount_paid'] > ($sale->outstanding_amount ?? 0)) {
                 return response()->json([
-                    'message' => 'Jumlah bayar melebihi sisa piutang.'
+                    'message' => 'Jumlah bayar melebihi sisa piutang.',
                 ], 422);
             }
 
@@ -58,7 +59,7 @@ class CustomerPaymentController extends Controller
                 'recorded_by_user_id' => $user->id,
             ]);
 
-            $newOutstanding = max(0, (float)($sale->outstanding_amount ?? 0) - (float)$validated['amount_paid']);
+            $newOutstanding = max(0, (float) ($sale->outstanding_amount ?? 0) - (float) $validated['amount_paid']);
             $sale->outstanding_amount = $newOutstanding;
             $sale->payment_status = $newOutstanding <= 0 ? 'paid' : 'partially_paid';
             $sale->save();
@@ -82,21 +83,21 @@ class CustomerPaymentController extends Controller
         return DB::transaction(function () use ($validated, $customer_payment) {
             $sale = Sale::lockForUpdate()->findOrFail($customer_payment->sale_id);
 
-            $oldAmount = (float)$customer_payment->amount_paid;
-            $newAmount = isset($validated['amount_paid']) ? (float)$validated['amount_paid'] : $oldAmount;
+            $oldAmount = (float) $customer_payment->amount_paid;
+            $newAmount = isset($validated['amount_paid']) ? (float) $validated['amount_paid'] : $oldAmount;
             $delta = $newAmount - $oldAmount; // positive increases payment
 
             // allowed max = outstanding + old amount
-            $allowedMax = (float)($sale->outstanding_amount ?? 0) + $oldAmount;
+            $allowedMax = (float) ($sale->outstanding_amount ?? 0) + $oldAmount;
             if ($newAmount > $allowedMax) {
                 return response()->json([
-                    'message' => 'Jumlah bayar melebihi sisa piutang.'
+                    'message' => 'Jumlah bayar melebihi sisa piutang.',
                 ], 422);
             }
 
             $customer_payment->update($validated);
 
-            $newOutstanding = max(0, (float)($sale->outstanding_amount ?? 0) - $delta);
+            $newOutstanding = max(0, (float) ($sale->outstanding_amount ?? 0) - $delta);
             $sale->outstanding_amount = $newOutstanding;
             $sale->payment_status = $newOutstanding <= 0 ? 'paid' : 'partially_paid';
             $sale->save();
@@ -113,13 +114,13 @@ class CustomerPaymentController extends Controller
         return DB::transaction(function () use ($customer_payment) {
             $sale = Sale::lockForUpdate()->findOrFail($customer_payment->sale_id);
 
-            $amount = (float)$customer_payment->amount_paid;
+            $amount = (float) $customer_payment->amount_paid;
 
             // Delete payment first
             $customer_payment->delete();
 
             // Revert outstanding and status
-            $sale->outstanding_amount = (float)($sale->outstanding_amount ?? 0) + $amount;
+            $sale->outstanding_amount = (float) ($sale->outstanding_amount ?? 0) + $amount;
             $sale->payment_status = $sale->outstanding_amount > 0
                 ? ($sale->amount_paid > 0 ? 'partially_paid' : 'unpaid')
                 : 'paid';

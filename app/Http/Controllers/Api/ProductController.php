@@ -39,7 +39,8 @@ class ProductController extends Controller
 
             return response()->json($products);
         } catch (\Exception $e) {
-            Log::error('Error fetching products: ' . $e->getMessage());
+            Log::error('Error fetching products: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -69,9 +70,11 @@ class ProductController extends Controller
 
                 return Product::create($validated);
             });
+
             return response()->json($product, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating product: ' . $e->getMessage());
+            Log::error('Error creating product: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create product. Please try again.'], 500);
         }
     }
@@ -95,7 +98,8 @@ class ProductController extends Controller
 
             return response()->json($product);
         } catch (\Exception $e) {
-            Log::error('Error fetching product details: ' . $e->getMessage());
+            Log::error('Error fetching product details: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -114,7 +118,7 @@ class ProductController extends Controller
             $transactions = collect();
 
             // Get sales transactions using SaleDetail model
-            if (!$type || $type === 'sale' || $type === 'all') {
+            if (! $type || $type === 'sale' || $type === 'all') {
                 $sales = DB::table('sale_details')
                     ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
                     ->join('users', 'sales.user_id', '=', 'users.id')
@@ -128,7 +132,7 @@ class ProductController extends Controller
                         'sales.created_at',
                         'sales.user_name',
                         DB::raw("'sale' as type"),
-                        DB::raw("'Penjualan' as type_label")
+                        DB::raw("'Penjualan' as type_label"),
                     ]);
 
                 if ($startDate) {
@@ -142,7 +146,7 @@ class ProductController extends Controller
             }
 
             // Get purchase transactions using PurchaseOrderDetail model
-            if (!$type || $type === 'purchase' || $type === 'all') {
+            if (! $type || $type === 'purchase' || $type === 'all') {
                 $purchases = DB::table('purchase_order_details')
                     ->join('purchase_orders', 'purchase_order_details.purchase_order_id', '=', 'purchase_orders.id')
                     ->join('users', 'purchase_orders.user_id', '=', 'users.id')
@@ -156,7 +160,7 @@ class ProductController extends Controller
                         'purchase_orders.created_at',
                         'users.name as user_name',
                         DB::raw("'purchase' as type"),
-                        DB::raw("'Pembelian' as type_label")
+                        DB::raw("'Pembelian' as type_label"),
                     ]);
 
                 if ($startDate) {
@@ -183,10 +187,11 @@ class ProductController extends Controller
                 'total' => $total,
                 'per_page' => $limit,
                 'current_page' => $page,
-                'last_page' => ceil($total / $limit)
+                'last_page' => ceil($total / $limit),
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching product transactions: ' . $e->getMessage());
+            Log::error('Error fetching product transactions: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -213,7 +218,7 @@ class ProductController extends Controller
                     DB::raw('MONTH(sales.created_at) as month'),
                     DB::raw('SUM(sale_details.quantity) as quantity_sold'),
                     DB::raw('SUM(sale_details.quantity * sale_details.price_at_sale) as revenue'),
-                    DB::raw('COUNT(DISTINCT sales.id) as transaction_count')
+                    DB::raw('COUNT(DISTINCT sales.id) as transaction_count'),
                 ])
                 ->groupBy(['year', 'month'])
                 ->orderBy('year')
@@ -246,7 +251,7 @@ class ProductController extends Controller
                 ->whereDate('sales.created_at', '>=', $startDate)
                 ->select([
                     DB::raw('DATE(sales.created_at) as date'),
-                    DB::raw('SUM(sale_details.quantity) as quantity_sold')
+                    DB::raw('SUM(sale_details.quantity) as quantity_sold'),
                 ])
                 ->groupBy('date')
                 ->orderByDesc('quantity_sold')
@@ -258,16 +263,17 @@ class ProductController extends Controller
                     'total_sales' => (int) $totalSales,
                     'total_revenue' => (float) $totalRevenue,
                     'average_price' => (float) $averagePrice,
-                    'best_selling_day' => $bestDay
+                    'best_selling_day' => $bestDay,
                 ],
                 'period' => [
                     'start_date' => $startDate->format('Y-m-d'),
                     'end_date' => $endDate->format('Y-m-d'),
-                    'months' => $months
-                ]
+                    'months' => $months,
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching product insights: ' . $e->getMessage());
+            Log::error('Error fetching product insights: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -307,14 +313,15 @@ class ProductController extends Controller
                 'reference_type',
                 'reference_id',
                 'user_name',
-                'created_at'
+                'created_at',
             ])
                 ->orderByDesc('created_at')
                 ->paginate($limit);
 
             return response()->json($mutations);
         } catch (\Exception $e) {
-            Log::error('Error fetching product mutations: ' . $e->getMessage());
+            Log::error('Error fetching product mutations: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -345,9 +352,11 @@ class ProductController extends Controller
                 }
                 $product->update($validated);
             });
+
             return response()->json($product);
         } catch (\Exception $e) {
-            Log::error("Error updating product {$product->id}: " . $e->getMessage());
+            Log::error("Error updating product {$product->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update product. Please try again.'], 500);
         }
     }
@@ -362,9 +371,11 @@ class ProductController extends Controller
             // "Tidak bisa hapus produk jika pernah ada transaksi"
             // Namun untuk saat ini, kita langsung hapus.
             $product->delete();
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting product {$product->id}: " . $e->getMessage());
+            Log::error("Error deleting product {$product->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete product. Please try again.'], 500);
         }
     }

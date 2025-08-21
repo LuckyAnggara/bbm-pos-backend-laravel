@@ -9,7 +9,7 @@ $admin = User::find(1); // Admin user
 $session = StockOpnameSession::find(19); // Stock opname that was approved
 
 // Test notification service
-$notificationService = new NotificationService();
+$notificationService = new NotificationService;
 
 echo "Testing notification service...\n";
 
@@ -19,7 +19,7 @@ echo "Approved notification sent!\n";
 
 // Test rejected notification (simulate)
 $session->status = 'SUBMIT'; // Reset status for testing
-$notificationService->sendStockOpnameRejectedNotification($session, $admin, "Test rejection reason");
+$notificationService->sendStockOpnameRejectedNotification($session, $admin, 'Test rejection reason');
 echo "Rejected notification sent!\n";
 
 // Test submitted notification (simulate)

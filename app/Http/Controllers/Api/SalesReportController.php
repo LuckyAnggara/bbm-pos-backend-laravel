@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Sale;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class SalesReportController extends Controller
 {
@@ -35,7 +35,7 @@ class SalesReportController extends Controller
                     DB::raw('SUM(sales.total_amount) as total_sales'),
                     DB::raw('SUM(sales.total_cogs) as total_cogs'),
                     DB::raw('SUM(sales.total_amount - sales.total_cogs) as total_profit'),
-                    DB::raw('AVG(sales.total_amount) as avg_transaction_value')
+                    DB::raw('AVG(sales.total_amount) as avg_transaction_value'),
                 ])
                 ->where('employees.is_sales', true)
                 ->where('sales.status', 'completed')
@@ -50,7 +50,7 @@ class SalesReportController extends Controller
                 'employees.id',
                 'employees.name',
                 'employees.employee_code',
-                'branches.name'
+                'branches.name',
             ])
                 ->orderByDesc('total_sales')
                 ->get();
@@ -61,7 +61,7 @@ class SalesReportController extends Controller
                 'total_sales_amount' => $salesData->sum('total_sales'),
                 'total_profit' => $salesData->sum('total_profit'),
                 'total_transactions' => $salesData->sum('total_transactions'),
-                'avg_sales_per_employee' => $salesData->count() > 0 ? $salesData->sum('total_sales') / $salesData->count() : 0
+                'avg_sales_per_employee' => $salesData->count() > 0 ? $salesData->sum('total_sales') / $salesData->count() : 0,
             ];
 
             // Get top performing sales employee
@@ -73,12 +73,12 @@ class SalesReportController extends Controller
                 'top_sales' => $topSales,
                 'period' => [
                     'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d')
-                ]
+                    'end_date' => $endDate->format('Y-m-d'),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error fetching sales report: ' . $e->getMessage()
+                'message' => 'Error fetching sales report: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -102,7 +102,7 @@ class SalesReportController extends Controller
             return response()->json($salesEmployees);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error fetching sales employees: ' . $e->getMessage()
+                'message' => 'Error fetching sales employees: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -119,7 +119,7 @@ class SalesReportController extends Controller
 
             $employee = Employee::with('branch')->findOrFail($employeeId);
 
-            if (!$employee->is_sales) {
+            if (! $employee->is_sales) {
                 return response()->json(['message' => 'Employee is not a sales person'], 400);
             }
 
@@ -143,7 +143,7 @@ class SalesReportController extends Controller
                     return $sale->created_at->format('Y-m-d');
                 })->map(function ($daySales) {
                     return $daySales->sum('total_amount');
-                })->max() ?? 0
+                })->max() ?? 0,
             ];
 
             return response()->json([
@@ -152,12 +152,12 @@ class SalesReportController extends Controller
                 'stats' => $stats,
                 'period' => [
                     'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d')
-                ]
+                    'end_date' => $endDate->format('Y-m-d'),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error fetching sales detail: ' . $e->getMessage()
+                'message' => 'Error fetching sales detail: '.$e->getMessage(),
             ], 500);
         }
     }

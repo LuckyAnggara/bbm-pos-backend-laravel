@@ -24,6 +24,29 @@ class Supplier extends Model
         'address',
         'notes',
         'branch_id',
+        // Extended fields
+        'company_type',
+        'tax_id',
+        'credit_limit',
+        'payment_terms',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
+        'website',
+        'industry',
+        'rating',
+        'is_active',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'credit_limit' => 'decimal:2',
+        'rating' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     /**

@@ -6,10 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SaleDetail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CustomerAnalyticsController extends Controller
 {
@@ -92,7 +91,8 @@ class CustomerAnalyticsController extends Controller
                 'top_products' => $topProducts,
             ]);
         } catch (\Exception $e) {
-            Log::error("Error getting customer analytics for {$customer->id}: " . $e->getMessage());
+            Log::error("Error getting customer analytics for {$customer->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to get customer analytics.'], 500);
         }
     }
@@ -124,7 +124,8 @@ class CustomerAnalyticsController extends Controller
 
             return response()->json($sales);
         } catch (\Exception $e) {
-            Log::error("Error getting customer sales for {$customer->id}: " . $e->getMessage());
+            Log::error("Error getting customer sales for {$customer->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to get customer sales.'], 500);
         }
     }
@@ -228,7 +229,8 @@ class CustomerAnalyticsController extends Controller
                 'highest_spending' => $highestSpending,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting top customers: ' . $e->getMessage());
+            Log::error('Error getting top customers: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to get top customers.'], 500);
         }
     }

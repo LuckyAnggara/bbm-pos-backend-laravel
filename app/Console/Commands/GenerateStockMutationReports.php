@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 class GenerateStockMutationReports extends Command
 {
     protected $signature = 'reports:generate-stock-mutation {--date=}';
+
     protected $description = 'Generate cached Stock Mutation reports for all branches up to given end date (default: today) starting from 2025-01-01';
 
     public function handle(StockMutationReportService $service)
@@ -22,11 +23,12 @@ class GenerateStockMutationReports extends Command
 
         $count = 0;
         foreach (Branch::all() as $branch) {
-            $service->compute((int)$branch->id, $startDate, $endDate, true);
+            $service->compute((int) $branch->id, $startDate, $endDate, true);
             $count++;
         }
 
         $this->info("Generated reports for {$count} branches.");
+
         return self::SUCCESS;
     }
 }

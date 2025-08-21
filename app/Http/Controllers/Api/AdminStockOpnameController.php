@@ -31,7 +31,7 @@ class AdminStockOpnameController extends Controller
                 'creator:id,name',
                 'approver:id,name',
                 'submitter:id,name',
-                'branch:id,name'
+                'branch:id,name',
             ]);
 
             // Filter by status
@@ -70,7 +70,8 @@ class AdminStockOpnameController extends Controller
 
             return response()->json($sessions);
         } catch (\Exception $e) {
-            Log::error('Error fetching stock opname sessions for admin review: ' . $e->getMessage());
+            Log::error('Error fetching stock opname sessions for admin review: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -91,12 +92,13 @@ class AdminStockOpnameController extends Controller
                 'creator:id,name',
                 'approver:id,name',
                 'submitter:id,name',
-                'branch:id,name'
+                'branch:id,name',
             ]);
 
             return response()->json($session);
         } catch (\Exception $e) {
-            Log::error('Error fetching stock opname session details: ' . $e->getMessage());
+            Log::error('Error fetching stock opname session details: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -118,10 +120,12 @@ class AdminStockOpnameController extends Controller
             }
 
             // Use the approve method from StockOpnameController logic
-            $stockOpnameController = new \App\Http\Controllers\StockOpnameController();
+            $stockOpnameController = new \App\Http\Controllers\StockOpnameController;
+
             return $stockOpnameController->approve($request, $session);
         } catch (\Exception $e) {
-            Log::error('Error approving stock opname session: ' . $e->getMessage());
+            Log::error('Error approving stock opname session: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -143,10 +147,12 @@ class AdminStockOpnameController extends Controller
             }
 
             // Use the reject method from StockOpnameController logic
-            $stockOpnameController = new \App\Http\Controllers\StockOpnameController();
+            $stockOpnameController = new \App\Http\Controllers\StockOpnameController;
+
             return $stockOpnameController->reject($request, $session);
         } catch (\Exception $e) {
-            Log::error('Error rejecting stock opname session: ' . $e->getMessage());
+            Log::error('Error rejecting stock opname session: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }

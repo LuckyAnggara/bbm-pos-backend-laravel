@@ -72,6 +72,7 @@ class Employee extends Model
     {
         $deposits = $this->savings()->where('type', 'deposit')->sum('amount');
         $withdrawals = $this->savings()->where('type', 'withdrawal')->sum('amount');
+
         return $deposits - $withdrawals;
     }
 
@@ -103,6 +104,6 @@ class Employee extends Model
         $count = self::where('branch_id', $branchId)->count() + 1;
         $sequence = str_pad($count, 4, '0', STR_PAD_LEFT);
 
-        return $prefix . $branchCode . $sequence;
+        return $prefix.$branchCode.$sequence;
     }
 }

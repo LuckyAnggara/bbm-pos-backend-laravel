@@ -68,12 +68,14 @@ class ExpenseController extends Controller
         try {
             $expense = DB::transaction(function () use ($validated) {
                 return Expense::create(array_merge($validated, [
-                    'user_id' => auth()->id()
+                    'user_id' => auth()->id(),
                 ]));
             });
+
             return response()->json($expense, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating expense: ' . $e->getMessage());
+            Log::error('Error creating expense: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create expense.'], 500);
         }
     }
@@ -102,9 +104,11 @@ class ExpenseController extends Controller
             DB::transaction(function () use ($expense, $validated) {
                 $expense->update($validated);
             });
+
             return response()->json($expense);
         } catch (\Exception $e) {
-            Log::error("Error updating expense {$expense->id}: " . $e->getMessage());
+            Log::error("Error updating expense {$expense->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update expense.'], 500);
         }
     }
@@ -118,9 +122,11 @@ class ExpenseController extends Controller
             DB::transaction(function () use ($expense) {
                 $expense->delete();
             });
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting expense {$expense->id}: " . $e->getMessage());
+            Log::error("Error deleting expense {$expense->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete expense.'], 500);
         }
     }

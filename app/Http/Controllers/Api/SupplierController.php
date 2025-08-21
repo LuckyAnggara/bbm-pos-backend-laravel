@@ -34,7 +34,8 @@ class SupplierController extends Controller
 
             return response()->json($suppliers);
         } catch (\Exception $e) {
-            Log::error('Error fetching suppliers: ' . $e->getMessage());
+            Log::error('Error fetching suppliers: '.$e->getMessage());
+
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
@@ -58,9 +59,11 @@ class SupplierController extends Controller
             $supplier = DB::transaction(function () use ($validated) {
                 return Supplier::create($validated);
             });
+
             return response()->json($supplier, 201);
         } catch (\Exception $e) {
-            Log::error('Error creating supplier: ' . $e->getMessage());
+            Log::error('Error creating supplier: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create supplier.'], 500);
         }
     }
@@ -92,9 +95,11 @@ class SupplierController extends Controller
             DB::transaction(function () use ($supplier, $validated) {
                 $supplier->update($validated);
             });
+
             return response()->json($supplier);
         } catch (\Exception $e) {
-            Log::error("Error updating supplier {$supplier->id}: " . $e->getMessage());
+            Log::error("Error updating supplier {$supplier->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to update supplier.'], 500);
         }
     }
@@ -108,9 +113,11 @@ class SupplierController extends Controller
             DB::transaction(function () use ($supplier) {
                 $supplier->delete();
             });
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
-            Log::error("Error deleting supplier {$supplier->id}: " . $e->getMessage());
+            Log::error("Error deleting supplier {$supplier->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete supplier.'], 500);
         }
     }

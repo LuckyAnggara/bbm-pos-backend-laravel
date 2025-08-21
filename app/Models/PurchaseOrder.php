@@ -33,6 +33,7 @@ class PurchaseOrder extends Model
         'status',
         'subtotal',
         'tax_discount_amount',
+        'tax_amount',
         'shipping_cost_charged',
         'other_costs',
         'total_amount',
@@ -51,6 +52,7 @@ class PurchaseOrder extends Model
         'is_credit' => 'boolean',
         'subtotal' => 'decimal:2',
         'tax_discount_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'shipping_cost_charged' => 'decimal:2',
         'other_costs' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -85,7 +87,6 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(SupplierPayment::class);
     }
-
 
     /**
      * Get the details for the purchase order.

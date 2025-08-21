@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\SupplierPayment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class SupplierPaymentController extends Controller
 {
@@ -60,8 +60,9 @@ class SupplierPaymentController extends Controller
 
             return response()->json($payment, 201);
         } catch (\Exception $e) {
-            Log::error("Supplier Payment Error: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to record payment: ' . $e->getMessage()], 500);
+            Log::error('Supplier Payment Error: '.$e->getMessage());
+
+            return response()->json(['message' => 'Failed to record payment: '.$e->getMessage()], 500);
         }
     }
 
@@ -133,8 +134,9 @@ class SupplierPaymentController extends Controller
 
             return response()->json($updatedPayment);
         } catch (\Exception $e) {
-            Log::error('Supplier Payment Update Error: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to update payment: ' . $e->getMessage()], 500);
+            Log::error('Supplier Payment Update Error: '.$e->getMessage());
+
+            return response()->json(['message' => 'Failed to update payment: '.$e->getMessage()], 500);
         }
     }
 }

@@ -28,6 +28,7 @@ class GenerateStockMovementReports extends Command
         }
 
         $this->info("Stock movement reports generated from {$start->toDateString()} to {$end->toDateString()}.");
+
         return self::SUCCESS;
     }
 }

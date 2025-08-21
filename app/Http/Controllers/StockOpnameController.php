@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{StockOpnameSession, StockOpnameItem, Product, StockMutation};
+use App\Models\Product;
+use App\Models\StockMutation;
+use App\Models\StockOpnameItem;
+use App\Models\StockOpnameSession;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,18 +27,19 @@ class StockOpnameController extends Controller
         if ($perPage <= 0) {
             $perPage = 25;
         }
+
         return response()->json($query->orderByDesc('id')->paginate($perPage));
     }
 
     public function store(Request $request)
     {
-        if (!$request->user()->branch_id) {
+        if (! $request->user()->branch_id) {
             return response()->json(['message' => 'User belum terkait branch, tidak bisa membuat stock opname.'], 422);
         }
         $data = $request->validate([
             'notes' => 'nullable|string',
         ]);
-        $code = 'SO-' . date('Ymd-His') . '-' . strtoupper(substr(uniqid(), -4));
+        $code = 'SO-'.date('Ymd-His').'-'.strtoupper(substr(uniqid(), -4));
         $session = StockOpnameSession::create([
             'branch_id' => $request->user()->branch_id,
             'created_by' => $request->user()->id,
@@ -43,12 +47,14 @@ class StockOpnameController extends Controller
             'code' => $code,
             'notes' => $data['notes'] ?? null,
         ]);
+
         return response()->json($session->fresh(), 201);
     }
 
     public function show(StockOpnameSession $session)
     {
         $session->load('items');
+
         return response()->json($session);
     }
 
@@ -58,9 +64,10 @@ class StockOpnameController extends Controller
             return response()->json(['message' => 'Only DRAFT can be edited'], 422);
         }
         $data = $request->validate([
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
         $session->update($data);
+
         return response()->json($session->fresh());
     }
 
@@ -72,7 +79,7 @@ class StockOpnameController extends Controller
         $data = $request->validate([
             'product_id' => 'required|exists:products,id',
             'counted_quantity' => 'required|integer|min:0',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
         $product = Product::findOrFail($data['product_id']);
         $item = StockOpnameItem::updateOrCreate([
@@ -87,6 +94,7 @@ class StockOpnameController extends Controller
             'notes' => $data['notes'] ?? null,
         ]);
         $this->recalcSession($session);
+
         return response()->json($item->fresh(), 201);
     }
 
@@ -100,6 +108,7 @@ class StockOpnameController extends Controller
         }
         $item->delete();
         $this->recalcSession($session);
+
         return response()->json(['message' => 'Deleted']);
     }
 
@@ -166,7 +175,7 @@ class StockOpnameController extends Controller
             $session->update([
                 'status' => 'APPROVED',
                 'approved_by' => auth()->id(),
-                'approved_at' => now()
+                'approved_at' => now(),
             ]);
 
             // Send notification
@@ -174,10 +183,12 @@ class StockOpnameController extends Controller
             $notificationService->sendStockOpnameApprovedNotification($session, auth()->user());
 
             DB::commit();
+
             return response()->json($session->fresh());
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['message' => 'Error during approval: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Error during approval: '.$e->getMessage()], 500);
         }
     }
 
@@ -199,7 +210,7 @@ class StockOpnameController extends Controller
             'status' => 'REJECTED',
             'admin_notes' => $data['admin_notes'],
             'approved_by' => auth()->id(),
-            'rejected_at' => now()
+            'rejected_at' => now(),
         ]);
 
         // Send notification
@@ -221,9 +232,13 @@ class StockOpnameController extends Controller
         $map = array_map('strtolower', $header);
         while (($row = fgetcsv($handle)) !== false) {
             $data = array_combine($map, $row);
-            if (!isset($data['sku']) || !isset($data['counted_quantity'])) continue;
+            if (! isset($data['sku']) || ! isset($data['counted_quantity'])) {
+                continue;
+            }
             $product = Product::where('sku', $data['sku'])->first();
-            if (!$product) continue;
+            if (! $product) {
+                continue;
+            }
             StockOpnameItem::updateOrCreate([
                 'session_id' => $session->id,
                 'product_id' => $product->id,
@@ -231,22 +246,23 @@ class StockOpnameController extends Controller
                 'branch_id' => $session->branch_id,
                 'product_name' => $product->name,
                 'system_quantity' => $product->quantity,
-                'counted_quantity' => (int)$data['counted_quantity'],
-                'difference' => (int)$data['counted_quantity'] - $product->quantity,
+                'counted_quantity' => (int) $data['counted_quantity'],
+                'difference' => (int) $data['counted_quantity'] - $product->quantity,
                 'notes' => null,
             ]);
         }
         fclose($handle);
         $this->recalcSession($session);
+
         return response()->json(['message' => 'Imported', 'session' => $session->fresh('items')]);
     }
 
     public function exportCsv(StockOpnameSession $session): StreamedResponse
     {
-        $filename = 'stock-opname-' . $session->code . '.csv';
+        $filename = 'stock-opname-'.$session->code.'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
         $callback = function () use ($session) {
             $out = fopen('php://output', 'w');
@@ -256,6 +272,7 @@ class StockOpnameController extends Controller
             }
             fclose($out);
         };
+
         return response()->stream($callback, 200, $headers);
     }
 

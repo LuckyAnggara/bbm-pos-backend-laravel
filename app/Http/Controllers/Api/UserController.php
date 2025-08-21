@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException; // <-- Tambahkan ini juga
-
-
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\User; // <-- Tambahkan ini juga
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -129,10 +127,11 @@ class UserController extends Controller
             return response()->json([
                 'user' => $user,
                 'token' => $token,
-                'message' => 'Registration successful'
+                'message' => 'Registration successful',
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Error creating user from registration: ' . $e->getMessage());
+            Log::error('Error creating user from registration: '.$e->getMessage());
+
             return response()->json(['message' => 'Registration failed. Please try again.'], 500);
         }
     }
@@ -144,7 +143,7 @@ class UserController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials do not match our records.'],
             ]);

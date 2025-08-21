@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shift;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class ShiftController extends Controller
 {
@@ -46,7 +46,8 @@ class ShiftController extends Controller
 
             return response()->json($shift, 201);
         } catch (\Exception $e) {
-            Log::error("Error starting shift for user {$user->id}: " . $e->getMessage());
+            Log::error("Error starting shift for user {$user->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to start shift.'], 500);
         }
     }
@@ -101,7 +102,8 @@ class ShiftController extends Controller
 
             return response()->json($shift->fresh()); // Ambil data terbaru dari DB
         } catch (\Exception $e) {
-            Log::error("Error ending shift {$shift->id}: " . $e->getMessage());
+            Log::error("Error ending shift {$shift->id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to end shift.'], 500);
         }
     }
@@ -115,7 +117,7 @@ class ShiftController extends Controller
             ->where('status', 'open')
             ->first();
 
-        if (!$activeShift) {
+        if (! $activeShift) {
             return response()->json(['message' => 'No active shift found.'], 404);
         }
 
@@ -135,8 +137,6 @@ class ShiftController extends Controller
             $query->whereDate('start_shift', $request->date);
         }
 
-
-
         // Search by transaction number or customer name
         if ($request->filled('search')) {
             $search = $request->search;
@@ -147,6 +147,7 @@ class ShiftController extends Controller
         }
 
         $shifts = $query->latest()->paginate($limit);
+
         return response()->json($shifts);
     }
 
@@ -164,7 +165,8 @@ class ShiftController extends Controller
 
             return response()->json($shift);
         } catch (\Exception $e) {
-            Log::error("Error fetching shift {$id}: " . $e->getMessage());
+            Log::error("Error fetching shift {$id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Shift not found.'], 404);
         }
     }
@@ -185,7 +187,8 @@ class ShiftController extends Controller
 
             return response()->json($transactions);
         } catch (\Exception $e) {
-            Log::error("Error fetching transactions for shift {$id}: " . $e->getMessage());
+            Log::error("Error fetching transactions for shift {$id}: ".$e->getMessage());
+
             return response()->json(['message' => 'Failed to fetch shift transactions.'], 500);
         }
     }

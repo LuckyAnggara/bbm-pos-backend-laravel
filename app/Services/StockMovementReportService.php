@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Product;
-use App\Models\StockMutation;
 use App\Models\StockMovementReport;
+use App\Models\StockMutation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -104,11 +104,14 @@ class StockMovementReportService
 
         if ($last) {
             $stockAfter = $last->stock_after ?? ($last->stock_before + $last->quantity_change);
+
             return (int) $stockAfter;
         }
 
         $product = Product::select('quantity')->find($productId);
-        if (!$product) return 0;
+        if (! $product) {
+            return 0;
+        }
 
         $netSinceDate = (int) DB::table('stock_mutations')
             ->where('branch_id', $branchId)

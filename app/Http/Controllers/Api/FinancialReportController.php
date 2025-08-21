@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Models\Expense;
 use App\Models\FinancialReport;
 use App\Models\Sale;
-use App\Models\Expense;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class FinancialReportController extends Controller
 {
@@ -22,9 +21,10 @@ class FinancialReportController extends Controller
         ]);
 
         $report = FinancialReport::where($validated)->first();
-        if (!$report) {
+        if (! $report) {
             return response()->json(['message' => 'Report not found'], 404);
         }
+
         return response()->json($report);
     }
 

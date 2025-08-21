@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use App\Models\User; // Jangan lupa import model User
+use App\Models\User;
+use Illuminate\Database\Seeder; // Jangan lupa import model User
 
 class UserSeeder extends Seeder
 {
@@ -17,7 +16,7 @@ class UserSeeder extends Seeder
         // Ini mencegah error duplikat jika seeder dijalankan berkali-kali.
         User::firstOrCreate(
             [
-                'email' => 'aa@gmail.com'
+                'email' => 'aa@gmail.com',
             ],
             [
                 'name' => 'Admin User',

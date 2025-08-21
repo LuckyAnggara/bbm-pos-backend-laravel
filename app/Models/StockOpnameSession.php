@@ -25,7 +25,7 @@ class StockOpnameSession extends Model
         'total_negative_adjustment',
         'submitted_at',
         'approved_at',
-        'rejected_at'
+        'rejected_at',
     ];
 
     protected $casts = [
@@ -38,18 +38,22 @@ class StockOpnameSession extends Model
     {
         return $this->hasMany(StockOpnameItem::class, 'session_id');
     }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
+
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');

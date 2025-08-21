@@ -53,7 +53,7 @@ class Payroll extends Model
                 'loan_deduction',
                 'other_deduction',
                 'total_amount',
-                'notes'
+                'notes',
             ])
             ->withTimestamps();
     }
@@ -89,6 +89,6 @@ class Payroll extends Model
             ->count() + 1;
         $sequence = str_pad($count, 3, '0', STR_PAD_LEFT);
 
-        return $prefix . $branchCode . $date . $sequence;
+        return $prefix.$branchCode.$date.$sequence;
     }
 }

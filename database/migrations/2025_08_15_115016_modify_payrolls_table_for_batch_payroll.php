@@ -20,7 +20,7 @@ return new class extends Migration
                 'base_salary',
                 'overtime_amount',
                 'bonus_amount',
-                'deduction_amount'
+                'deduction_amount',
             ]);
 
             // Add new fields for batch payroll

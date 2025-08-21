@@ -21,6 +21,6 @@ class Notification extends Model
         'read_at',
         'dismissed_at',
         'created_by',
-        'created_by_name'
+        'created_by_name',
     ];
 }

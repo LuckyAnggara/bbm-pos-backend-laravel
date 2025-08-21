@@ -51,7 +51,8 @@ class StockAdjustmentController extends Controller
 
             return response()->json($adjustment, 201);
         } catch (\Exception $e) {
-            Log::error('Stock Adjustment Error: ' . $e->getMessage());
+            Log::error('Stock Adjustment Error: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to adjust stock.'], 500);
         }
     }
